@@ -1,0 +1,18 @@
+RawDataDirectory: /data1/gwm17/7BeNov2021/RawData/ANASENData/raw_root/
+OrgainizedDataDirectory: /data1/gwm17/7BeNov2021/runs/
+StartRun: 2376 StopRun: 2477
+PulserData: /data1/gwm17/7BeNov2021/merged/pulserData_bothSides.root
+AlphaData: /data1/gwm17/7BeNov2021/merged/alphaData_updown.root
+RunData: /data1/gwm17/7BeNov2021/merged/runs-2376-2394_400keV.root
+ZeroCalibrationHistogramFile: /data1/gwm17/7BeNov2021/calibration_plots/ZeroOffsetCalibrations_11222021.root
+ZeroCalibrationFile: ./results/zoffset_11222021.txt
+BackGainMatchingHistogramFile: /data1/gwm17/7BeNov2021/calibration_plots/BackGainMatch_11222021.root
+BackGainMatchingFile: ./results/backgains_11222021.txt
+UpDownGainMatchingHistogramFile: /data1/gwm17/7BeNov2021/calibration_plots/UpDownGainMatch_11222021.root
+UpDownGainMatchingFile: ./results/updowngains_11222021.txt
+FrontBackGainMatchingHistogramFile: /data1/gwm17/7BeNov2021/calibration_plots/FrontBackGainMatch_11222021.root
+FrontBackGainMatchingFile: ./results/frontbackgains_11222021.txt
+EnergyCalibrationHistogramFile: /data1/gwm17/7BeNov2021/calibration_plots/EnergyCalibration_11222021.root
+EnergyCalibrationFile: ./results/ecal_11222021.txt
+ChannelMap: ./etc/AnasenChannelMap_fixedOrientation.txt
+CalibratedDataFile: /data1/gwm17/7BeNov2021/calibrated/calData-2376-2394_400keV.root

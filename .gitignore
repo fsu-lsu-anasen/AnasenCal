@@ -1,0 +1,12 @@
+*.o
+*.so
+*.dylib
+*.txt
+*.swp
+*.pcm
+*.cxx
+bin/anasencal
+
+!.gitignore
+!input.txt
+!etc/AnasenChannelMap_fixedOrientation.txt
