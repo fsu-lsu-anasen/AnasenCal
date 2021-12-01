@@ -212,9 +212,10 @@ void DataCalibrator::Run(const std::string& inputname, const std::string& output
 				{
 					auto frontoffset = zero_map.FindOffset(ringhit.global_chan);
 					auto frontgains = frontback_map.FindParameters(ringhit.global_chan);
-					if(frontoffset == zero_map.End() || frontgains == frontback_map.End())
+					auto frontcal = energy_map.FindParameters(ringhit.global_chan);
+					if(frontoffset == zero_map.End() || frontgains == frontback_map.End() || frontcal == energy_map.End())
 						continue;
-					cal_up_energy = frontgains->second.slope*(ringhit.energy - frontoffset->second) + frontgains->second.intercept;
+					cal_up_energy = frontcal->second.slope*(frontgains->second.slope*(ringhit.energy - frontoffset->second) + frontgains->second.intercept) + frontcal->second.intercept;
 					if(cal_up_energy/qqqhit.wedge_energy > 1.2 || cal_up_energy/qqqhit.wedge_energy < 0.8)
 						continue;
 					else
@@ -242,9 +243,10 @@ void DataCalibrator::Run(const std::string& inputname, const std::string& output
 				{
 					auto frontoffset = zero_map.FindOffset(ringhit.global_chan);
 					auto frontgains = frontback_map.FindParameters(ringhit.global_chan);
-					if(frontoffset == zero_map.End() || frontgains == frontback_map.End())
+					auto frontcal = energy_map.FindParameters(ringhit.global_chan);
+					if(frontoffset == zero_map.End() || frontgains == frontback_map.End() || frontcal == energy_map.End())
 						continue;
-					cal_up_energy = frontgains->second.slope*(ringhit.energy - frontoffset->second) + frontgains->second.intercept;
+					cal_up_energy = frontcal->second.slope*(frontgains->second.slope*(ringhit.energy - frontoffset->second) + frontgains->second.intercept) + frontcal->second.intercept;
 					if(cal_up_energy/qqqhit.wedge_energy > 1.2 || cal_up_energy/qqqhit.wedge_energy < 0.8)
 						continue;
 					else
