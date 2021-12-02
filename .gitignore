@@ -5,6 +5,8 @@
 *.swp
 *.pcm
 *.cxx
+*.sublime-project
+*.sublime-workspace
 bin/anasencal
 
 !.gitignore

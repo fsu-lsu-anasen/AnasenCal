@@ -2,6 +2,7 @@
 #include <string>
 #include <iostream>
 #include "DataOrganizer.h"
+#include "DeadChannelMap.h"
 #include "ZeroCalibrator.h"
 #include "GainMatcher.h"
 #include "MapChecker.h"
@@ -24,7 +25,7 @@ int main(int argc, char** argv)
 			std::cerr<<"--gain-match : performs all gain-matching steps in a single-shot (not recommended)"<<std::endl;
 			std::cerr<<"--gain-match-backs : performs first step of gain-matching by aligning all back channels within each detector"<<std::endl;
 			std::cerr<<"--gain-match-updown : performs second step of gain-matching by aligning the SX3 front upstream and downstream channels"<<std::endl;
-			std::cerr<<"--gain-match-updown : performs last step of gain-matching by aligning front channels to back channels"<<std::endl;
+			std::cerr<<"--gain-match-frontback : performs last step of gain-matching by aligning front channels to back channels"<<std::endl;
 			std::cerr<<"--calibrate-energy : calibrates the energy of each channel using alpha data"<<std::endl;
 			std::cerr<<"--apply-calibrations : applies calibrations to a dataset, generating a new calibrated file"<<std::endl;
 			std::cerr<<"These are listed in the order that they should be used to completely calibrate the silicon in an ANASEN dataset"<<std::endl;
@@ -213,6 +214,17 @@ int main(int argc, char** argv)
 		DataCalibrator dcal(channelfile, zcaloutfile, backgains, updowngains, frontbackgains, ecaloutfile);
 		dcal.Run(rundata, finaldata);
 	}
+	else if(option == "--dead-channels")
+	{
+		std::cout<<"Zero-Offset Calibration Output File: "<<zcaloutfile<<std::endl;
+		std::cout<<"Back Gain-matching Output File: "<<backgains<<std::endl;
+		std::cout<<"SX3 Upstream-Downstream Gain-matching Output File: "<<updowngains<<std::endl;
+		std::cout<<"Front-Back Gain-matching Output File: "<<frontbackgains<<std::endl;
+		std::cout<<"Energy Calibration Output File: "<<ecaloutfile<<std::endl;
+		std::cout<<"----------------------------------------------------"<<std::endl;
+		std::cout<<"Generating a dead channel map in etc/DeadChannels.txt..."<<std::endl;
+		GenerateDeadChannelMap(zcaloutfile, backgains, updowngains, frontbackgains, ecaloutfile, channelfile, "etc/DeadChannels.txt");
+	}
 	else
 	{
 		std::cout<<"----------------------------------------------------"<<std::endl;
@@ -222,7 +234,7 @@ int main(int argc, char** argv)
 		std::cerr<<"--gain-match : performs all gain-matching steps in a single-shot (not recommended)"<<std::endl;
 		std::cerr<<"--gain-match-backs : performs first step of gain-matching by aligning all back channels within each detector"<<std::endl;
 		std::cerr<<"--gain-match-updown : performs second step of gain-matching by aligning the SX3 front upstream and downstream channels"<<std::endl;
-		std::cerr<<"--gain-match-updown : performs last step of gain-matching by aligning front channels to back channels"<<std::endl;
+		std::cerr<<"--gain-match-frontback : performs last step of gain-matching by aligning front channels to back channels"<<std::endl;
 		std::cerr<<"--calibrate-energy : calibrates the energy of each channel using alpha data"<<std::endl;
 		std::cerr<<"--apply-calibrations : applies calibrations to a dataset, generating a new calibrated file"<<std::endl;
 		std::cerr<<"These are listed in the order that they should be used to completely calibrate the silicon in an ANASEN dataset"<<std::endl;

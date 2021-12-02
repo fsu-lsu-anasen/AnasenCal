@@ -4,7 +4,7 @@
 #include <iostream>
 
 void makeMap() {
-	std::string outputname = "./etc/AnasenChannelMap_fixedOrientation.txt";
+	std::string outputname = "../etc/AnasenChannelMap_fixedOrientation.txt";
 	std::ofstream output(outputname.c_str());
 
 	int gchan;
@@ -123,7 +123,7 @@ void makeMap() {
 			}
 			else if(gchan>=168 && gchan<176)
 			{
-				output<<gchan<<" "<<"BARREL1B"<<" "<<"F"<<" "<<"FRONT";
+				output<<gchan<<" "<<"BARREL1B"<<" "<<"E"<<" "<<"FRONT";
 				local_chan = (7-j%8);
 				if((7-j%8) < 4)
 				{
@@ -137,7 +137,7 @@ void makeMap() {
 			}
 			else if(gchan>=176 && gchan<184)
 			{
-				output<<gchan<<" "<<"BARREL1A"<<" "<<"A"<<" "<<"FRONT";
+				output<<gchan<<" "<<"BARREL1A"<<" "<<"B"<<" "<<"FRONT";
 				local_chan = (7-j%8);
 				if((7-j%8) < 4)
 				{
@@ -151,7 +151,7 @@ void makeMap() {
 			}
 			else if(gchan>=184 && gchan<192)
 			{
-				output<<gchan<<" "<<"BARREL1A"<<" "<<"B"<<" "<<"FRONT";
+				output<<gchan<<" "<<"BARREL1A"<<" "<<"A"<<" "<<"FRONT";
 				local_chan = (7-j%8);
 				if((7-j%8) < 4)
 				{
@@ -173,7 +173,7 @@ void makeMap() {
 			}
 			else if(gchan>=224 && gchan<232)
 			{
-				output<<gchan<<" "<<"BARREL2A"<<" "<<"C"<<" "<<"FRONT";
+				output<<gchan<<" "<<"BARREL2A"<<" "<<"B"<<" "<<"FRONT";
 				local_chan = (7-j%8);
 				if((7-j%8) < 4)
 				{
@@ -187,7 +187,7 @@ void makeMap() {
 			}
 			else if(gchan>=232 && gchan<240)
 			{
-				output<<gchan<<" "<<"BARREL2A"<<" "<<"D"<<" "<<"FRONT";
+				output<<gchan<<" "<<"BARREL2A"<<" "<<"A"<<" "<<"FRONT";
 				local_chan = (7-j%8);
 				if((7-j%8) < 4)
 				{
@@ -201,7 +201,7 @@ void makeMap() {
 			}
 			else if(gchan>=240 && gchan<248)
 			{
-				output<<gchan<<" "<<"BARREL2A"<<" "<<"E"<<" "<<"FRONT";
+				output<<gchan<<" "<<"BARREL2A"<<" "<<"F"<<" "<<"FRONT";
 				local_chan = (7-j%8);
 				if((7-j%8) < 4)
 				{
@@ -215,7 +215,7 @@ void makeMap() {
 			}
 			else if(gchan>=248 && gchan<256)
 			{
-				output<<gchan<<" "<<"BARREL2A"<<" "<<"F"<<" "<<"FRONT";
+				output<<gchan<<" "<<"BARREL2A"<<" "<<"E"<<" "<<"FRONT";
 				local_chan = (7-j%8);
 				if((7-j%8) < 4)
 				{
@@ -362,7 +362,7 @@ void makeMap() {
 			}
 			else if(gchan>=368 && gchan<376)
 			{
-				output<<gchan<<" "<<"BARREL2A"<<" "<<"B"<<" "<<"FRONT";
+				output<<gchan<<" "<<"BARREL2A"<<" "<<"C"<<" "<<"FRONT";
 				local_chan = (7-j%8);
 				if((7-j%8) < 4)
 				{
@@ -376,7 +376,7 @@ void makeMap() {
 			}
 			else if(gchan>=376 && gchan<384)
 			{
-				output<<gchan<<" "<<"BARREL2A"<<" "<<"A"<<" "<<"FRONT";
+				output<<gchan<<" "<<"BARREL2A"<<" "<<"D"<<" "<<"FRONT";
 				local_chan = (7-j%8);
 				if((7-j%8) < 4)
 				{
