@@ -458,7 +458,8 @@ void GainMatcher::MatchSX3UpDown(const std::string& inputname, const std::string
 							cal_back = backgains->second.slope*(backhit.energy - backzero_offset->second) + backgains->second.intercept;
 							up_rel_energy = (fuphit.energy - fupzero_offset->second)/(cal_back);
 							down_rel_energy = (fdownhit.energy - fdownzero_offset->second)/cal_back;
-							if(up_rel_energy > 1.5 || down_rel_energy > 1.5 || cal_back < 0 || up_rel_energy < 0 || down_rel_energy < 0)
+							if(up_rel_energy > 1.3 || down_rel_energy > 1.3 || cal_back < 0 || up_rel_energy < 0 || down_rel_energy < 0
+								|| (up_rel_energy+down_rel_energy) < 0.5 || (up_rel_energy + down_rel_energy)>1.5)
 								continue;
 							gain_data[fuphit.global_chan].xvals.push_back(up_rel_energy);
 							gain_data[fuphit.global_chan].yvals.push_back(down_rel_energy);
@@ -494,7 +495,8 @@ void GainMatcher::MatchSX3UpDown(const std::string& inputname, const std::string
 							cal_back = backgains->second.slope*(backhit.energy - backzero_offset->second) + backgains->second.intercept;
 							up_rel_energy = (fuphit.energy - fupzero_offset->second)/(cal_back);
 							down_rel_energy = (fdownhit.energy - fdownzero_offset->second)/cal_back;
-							if(up_rel_energy > 1.5 || down_rel_energy > 1.5 || cal_back < 0 || up_rel_energy < 0 || down_rel_energy < 0)
+							if(up_rel_energy > 1.5 || down_rel_energy > 1.5 || cal_back < 0 || up_rel_energy < 0 || down_rel_energy < 0
+								|| (up_rel_energy+down_rel_energy) < 0.5 || (up_rel_energy + down_rel_energy)>1.5)
 								continue;
 							gain_data[fuphit.global_chan].xvals.push_back(up_rel_energy);
 							gain_data[fuphit.global_chan].yvals.push_back(down_rel_energy);

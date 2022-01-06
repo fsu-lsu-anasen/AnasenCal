@@ -63,6 +63,20 @@ void DataCalibrator::Run(const std::string& inputname, const std::string& output
 	CalibratedSX3Hit sx3hit, blank_sx3;
 	CalibratedQQQHit qqqhit, blank_qqq;
 	double cal_back, cal_up_energy, cal_down_energy, cal_sum;
+	int nbqqq_ws=0, nbqqq_ws_matched=0;
+	int nbqqq0_ws=0, nbqqq0_ws_matched=0;
+	int nbqqq1_ws=0, nbqqq1_ws_matched=0;
+	int nbqqq2_ws=0, nbqqq2_ws_matched=0;
+	int nbqqq3_ws=0, nbqqq3_ws_matched=0;
+	int nfqqq_ws=0, nfqqq_ws_matched=0;
+	int nfqqq0_ws=0, nfqqq0_ws_noRings=0, nfqqq0_ws_manyRings=0, nfqqq0_ws_oneRing=0, nfqqq0_ws_matched=0;
+	int nfqqq1_ws=0, nfqqq1_ws_noRings=0, nfqqq1_ws_manyRings=0, nfqqq1_ws_oneRing=0, nfqqq1_ws_matched=0;
+	int nfqqq2_ws=0, nfqqq2_ws_noRings=0, nfqqq2_ws_manyRings=0, nfqqq2_ws_oneRing=0, nfqqq2_ws_matched=0;
+	int nfqqq3_ws=0, nfqqq3_ws_noRings=0, nfqqq3_ws_manyRings=0, nfqqq3_ws_oneRing=0, nfqqq3_ws_matched=0;
+	int nfqqq0_ringsOnly=0;
+	int nfqqq1_ringsOnly=0;
+	int nfqqq2_ringsOnly=0;
+	int nfqqq3_ringsOnly=0;
 	for(long i=0; i<nentries; i++)
 	{
 		intree->GetEntry(i);
@@ -133,12 +147,14 @@ void DataCalibrator::Run(const std::string& inputname, const std::string& output
 							break;
 						}
 					}
+					/* This should not have been here
 					if(sx3hit.frontdown_gchan != -1 && sx3hit.frontup_gchan !=  -1)
 					{
 						break;
 					}
+					*/
+					calevent.barrel1.push_back(sx3hit);
 				}
-				calevent.barrel1.push_back(sx3hit);
 			}
 
 			for(auto& backhit : event->barrel2[j].backs)
@@ -186,17 +202,34 @@ void DataCalibrator::Run(const std::string& inputname, const std::string& output
 							break;
 						}
 					}
+
+					/* This should not have been there
 					if(sx3hit.frontdown_gchan != -1 && sx3hit.frontup_gchan !=  -1)
 					{
 						break;
 					}
+					*/
+					calevent.barrel2.push_back(sx3hit); //This should be here....
 				}
-				calevent.barrel2.push_back(sx3hit);
 			}
 		}
 
 		for(int j=0; j<4; j++)
 		{
+			/*
+			if(event->fqqq[j].wedges.size() != 0)
+				std::cout<<"looking over fqqq"<<j<<std::endl;
+			*/
+			if(event->fqqq[j].wedges.size() == 0 && event->fqqq[j].rings.size() != 0)
+			{
+				switch(j)
+				{
+					case 0: nfqqq0_ringsOnly++; break;
+					case 1: nfqqq1_ringsOnly++; break;
+					case 2: nfqqq2_ringsOnly++; break;
+					case 3: nfqqq3_ringsOnly++; break;
+				}
+			} 
 			for(auto& wedgehit : event->fqqq[j].wedges)
 			{
 				qqqhit = blank_qqq;
@@ -205,9 +238,27 @@ void DataCalibrator::Run(const std::string& inputname, const std::string& output
 				auto backcal = energy_map.FindParameters(wedgehit.global_chan);
 				if(backgains == back_map.End() || backcal == energy_map.End() || backoffset == zero_map.End())
 					continue;
+				
 				qqqhit.wedge_energy = backcal->second.slope*(backgains->second.slope*(wedgehit.energy - backoffset->second) + backgains->second.intercept) + backcal->second.intercept;
 				qqqhit.wedge_gchan = wedgehit.global_chan;
 				qqqhit.detector_index = j;
+				if(qqqhit.wedge_energy < 2.8)
+					continue;
+				nfqqq_ws++;
+				switch(j)
+				{
+					case 0: nfqqq0_ws++; break;
+					case 1: nfqqq1_ws++; break;
+					case 2: nfqqq2_ws++; break;
+					case 3: nfqqq3_ws++; break;
+				}
+				/*
+				if(j==1)
+				{
+					std::cout<<"attempting to match fqqq"<<j<<" wedge with energy "<<qqqhit.wedge_energy<<" time "<<wedgehit.time<<" and gchan "<<qqqhit.wedge_gchan<<std::endl;
+					std::cout<<"number of candidates "<<event->fqqq[j].rings.size()<<std::endl;
+				}
+				*/
 				for(auto& ringhit : event->fqqq[j].rings)
 				{
 					auto frontoffset = zero_map.FindOffset(ringhit.global_chan);
@@ -216,16 +267,72 @@ void DataCalibrator::Run(const std::string& inputname, const std::string& output
 					if(frontoffset == zero_map.End() || frontgains == frontback_map.End() || frontcal == energy_map.End())
 						continue;
 					cal_up_energy = frontcal->second.slope*(frontgains->second.slope*(ringhit.energy - frontoffset->second) + frontgains->second.intercept) + frontcal->second.intercept;
+					//if(j == 1)std::cout<<"ring candidate energy "<<cal_up_energy<<" time "<<ringhit.time<<" gchan "<<ringhit.global_chan<<std::endl;
 					if(cal_up_energy/qqqhit.wedge_energy > 1.2 || cal_up_energy/qqqhit.wedge_energy < 0.8)
 						continue;
 					else
 					{
+						//if(j==1)std::cout<<"matched!"<<std::endl;
+						nfqqq_ws_matched++;
+						switch(j)
+						{
+							case 0: nfqqq0_ws_matched++; break;
+							case 1: nfqqq1_ws_matched++; break;
+							case 2: nfqqq2_ws_matched++; break;
+							case 3: nfqqq3_ws_matched++; break;
+						}
 						qqqhit.ring_energy = cal_up_energy;
 						qqqhit.ring_gchan = ringhit.global_chan;
 						break;
 					} 
 				}
 				calevent.fqqq.push_back(qqqhit);
+				if(qqqhit.ring_gchan == -1)
+				{
+					switch(j)
+					{
+						case 0:
+						{
+							if(event->fqqq[j].rings.size() == 0)
+								nfqqq0_ws_noRings++;
+							else if(event->fqqq[j].rings.size() == 1)
+								nfqqq0_ws_oneRing++;
+							else if(event->fqqq[j].rings.size() > 1)
+								nfqqq0_ws_manyRings++;
+							break;
+						}
+						case 1:
+						{
+							if(event->fqqq[j].rings.size() == 0)
+								nfqqq1_ws_noRings++;
+							else if(event->fqqq[j].rings.size() == 1)
+								nfqqq1_ws_oneRing++;
+							else if(event->fqqq[j].rings.size() > 1)
+								nfqqq1_ws_manyRings++;
+							break;
+						}
+						case 2:
+						{
+							if(event->fqqq[j].rings.size() == 0)
+								nfqqq2_ws_noRings++;
+							else if(event->fqqq[j].rings.size() == 1)
+								nfqqq2_ws_oneRing++;
+							else if(event->fqqq[j].rings.size() > 1)
+								nfqqq2_ws_manyRings++;
+							break;
+						}
+						case 3:
+						{
+							if(event->fqqq[j].rings.size() == 0)
+								nfqqq3_ws_noRings++;
+							else if(event->fqqq[j].rings.size() == 1)
+								nfqqq3_ws_oneRing++;
+							else if(event->fqqq[j].rings.size() > 1)
+								nfqqq3_ws_manyRings++;
+							break;
+						}
+					}
+				}
 			}
 
 			for(auto& wedgehit : event->bqqq[j].wedges)
@@ -236,6 +343,14 @@ void DataCalibrator::Run(const std::string& inputname, const std::string& output
 				auto backcal = energy_map.FindParameters(wedgehit.global_chan);
 				if(backgains == back_map.End() || backcal == energy_map.End() || backoffset == zero_map.End())
 					continue;
+				nbqqq_ws++;
+				switch(j)
+				{
+					case 0: nbqqq0_ws++; break;
+					case 1: nbqqq1_ws++; break;
+					case 2: nbqqq2_ws++; break;
+					case 3: nbqqq3_ws++; break;
+				}
 				qqqhit.wedge_energy = backcal->second.slope*(backgains->second.slope*(wedgehit.energy - backoffset->second) + backgains->second.intercept) + backcal->second.intercept;
 				qqqhit.wedge_gchan = wedgehit.global_chan;
 				qqqhit.detector_index = j;
@@ -251,6 +366,14 @@ void DataCalibrator::Run(const std::string& inputname, const std::string& output
 						continue;
 					else
 					{
+						nbqqq_ws_matched++;
+						switch(j)
+						{
+							case 0: nbqqq0_ws_matched++; break;
+							case 1: nbqqq1_ws_matched++; break;
+							case 2: nbqqq2_ws_matched++; break;
+							case 3: nbqqq3_ws_matched++; break;
+						}
 						qqqhit.ring_energy = cal_up_energy;
 						qqqhit.ring_gchan = ringhit.global_chan;
 						break;
@@ -265,6 +388,25 @@ void DataCalibrator::Run(const std::string& inputname, const std::string& output
 
 	}
 	std::cout<<std::endl;
+
+	std::cout<<"nbqqq_ws: "<<nbqqq_ws<<" matched: "<<nbqqq_ws_matched<<std::endl;
+	std::cout<<"nbqqq0_ws: "<<nbqqq0_ws<<" matched: "<<nbqqq0_ws_matched<<std::endl;
+	std::cout<<"nbqqq1_ws: "<<nbqqq1_ws<<" matched: "<<nbqqq1_ws_matched<<std::endl;
+	std::cout<<"nbqqq2_ws: "<<nbqqq2_ws<<" matched: "<<nbqqq2_ws_matched<<std::endl;
+	std::cout<<"nbqqq3_ws: "<<nbqqq3_ws<<" matched: "<<nbqqq3_ws_matched<<std::endl;
+	std::cout<<"nfqqq_ws: "<<nfqqq_ws<<" matched: "<<nfqqq_ws_matched<<std::endl;
+	std::cout<<"nfqqq0_ws: "<<nfqqq0_ws<<" matched: "<<nfqqq0_ws_matched<<" no rings present: "<<nfqqq0_ws_noRings;
+	std::cout<<" many rings present: "<<nfqqq0_ws_manyRings<<" one ring present: "<<nfqqq0_ws_oneRing<<std::endl;
+	std::cout<<"nfqqq1_ws: "<<nfqqq1_ws<<" matched: "<<nfqqq1_ws_matched<<" no rings present: "<<nfqqq1_ws_noRings;
+	std::cout<<" many rings present: "<<nfqqq1_ws_manyRings<<" one ring present: "<<nfqqq1_ws_oneRing<<std::endl;
+	std::cout<<"nfqqq2_ws: "<<nfqqq2_ws<<" matched: "<<nfqqq2_ws_matched<<" no rings present: "<<nfqqq2_ws_noRings;
+	std::cout<<" many rings present: "<<nfqqq2_ws_manyRings<<" one ring present: "<<nfqqq2_ws_oneRing<<std::endl;
+	std::cout<<"nfqqq3_ws: "<<nfqqq3_ws<<" matched: "<<nfqqq3_ws_matched<<" no rings present: "<<nfqqq3_ws_noRings;
+	std::cout<<" many rings present: "<<nfqqq3_ws_manyRings<<" one ring present: "<<nfqqq3_ws_oneRing<<std::endl;
+	std::cout<<"nfqqq0_ringsOnly: "<<nfqqq0_ringsOnly<<std::endl;
+	std::cout<<"nfqqq1_ringsOnly: "<<nfqqq1_ringsOnly<<std::endl;
+	std::cout<<"nfqqq2_ringsOnly: "<<nfqqq2_ringsOnly<<std::endl;
+	std::cout<<"nfqqq3_ringsOnly: "<<nfqqq3_ringsOnly<<std::endl;
 
 	input->Close();
 	output->cd();

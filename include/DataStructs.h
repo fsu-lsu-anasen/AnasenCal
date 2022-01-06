@@ -16,6 +16,7 @@ struct SiliconHit
 	int global_chan = -1;
 	int local_chan = -1;
 	double energy = -1;
+	double time = -1;
 };
 
 struct SX3Data

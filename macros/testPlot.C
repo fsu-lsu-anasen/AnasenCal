@@ -161,16 +161,22 @@ void MyFill(THashTable* table, const std::string& name, const std::string& title
 	}
 }
 
+int GetChipboard(int gchan)
+{
+	int channels_per_chipboard = 32;
+	return std::floor(gchan/channels_per_chipboard);
+}
+
 void testPlot()
 {
-	TFile* file = TFile::Open("/data1/gwm17/7BeNov2021/merged/alphaData_updown.root", "READ");
+	TFile* file = TFile::Open("/data1/gwm17/7BeNov2021/merged/allRuns.root", "READ");
 	TTree* tree = (TTree*) file->Get("EventTree");
 
 	AnasenEvent* event = new AnasenEvent();
 
 	tree->SetBranchAddress("event", &event);
 
-	TFile* outfile = TFile::Open("/data1/gwm17/7BeNov2021/histograms/ChannelChecking.root", "RECREATE");
+	TFile* outfile = TFile::Open("/data1/gwm17/7BeNov2021/histograms/ChannelChecking_runData.root", "RECREATE");
 
 	THashTable* table = new THashTable();
 
@@ -180,12 +186,21 @@ void testPlot()
 	std::vector<int> total_counts;
 	std::vector<std::vector<int>> channel_matrix;
 	std::vector<std::vector<int>> improper_channel_matrix;
+	std::vector<int> fired_chipboards;
+	std::vector<std::vector<int>> chipboard_matrix;
 	channel_matrix.resize(544);
+	chipboard_matrix.resize(17);
 	total_counts.resize(544);
 	for(auto& list : channel_matrix)
 		list.resize(545);
+	for(auto& list : chipboard_matrix)
+		list.resize(18);
 
 	for(auto& list : channel_matrix)
+		for(auto& entry : list)
+			entry=0;
+
+	for(auto& list : chipboard_matrix)
 		for(auto& entry : list)
 			entry=0;
 
@@ -201,7 +216,10 @@ void testPlot()
 	{
 		tree->GetEntry(i);
 
+		std::cout<<"\rProcessing entry "<<i<<std::flush;
+
 		fired_channels.clear();
+		fired_chipboards.clear();
 
 		for(int j=0; j<12; j++)
 		{
@@ -211,6 +229,7 @@ void testPlot()
 				{
 					name = "channel_"+std::to_string(hit.global_chan);
 					fired_channels.push_back(hit.global_chan);
+					fired_chipboards.push_back(GetChipboard(hit.global_chan));
 					total_counts[hit.global_chan]++;
 					MyFill(table,name.c_str(), name.c_str(), 16384,0,16384,hit.energy);
 				}
@@ -222,6 +241,7 @@ void testPlot()
 					name = "channel_"+std::to_string(hit.global_chan);
 					fired_channels.push_back(hit.global_chan);
 					total_counts[hit.global_chan]++;
+					fired_chipboards.push_back(GetChipboard(hit.global_chan));
 					MyFill(table,name.c_str(), name.c_str(), 16384,0,16384,hit.energy);
 				}
 			}
@@ -232,6 +252,7 @@ void testPlot()
 					name = "channel_"+std::to_string(hit.global_chan);
 					fired_channels.push_back(hit.global_chan);
 					total_counts[hit.global_chan]++;
+					fired_chipboards.push_back(GetChipboard(hit.global_chan));
 					MyFill(table,name.c_str(), name.c_str(), 16384,0,16384,hit.energy);
 				}
 			}
@@ -242,6 +263,7 @@ void testPlot()
 					name = "channel_"+std::to_string(hit.global_chan);
 					fired_channels.push_back(hit.global_chan);
 					total_counts[hit.global_chan]++;
+					fired_chipboards.push_back(GetChipboard(hit.global_chan));
 					MyFill(table,name.c_str(), name.c_str(), 16384,0,16384,hit.energy);
 				}
 			}
@@ -252,6 +274,7 @@ void testPlot()
 					name = "channel_"+std::to_string(hit.global_chan);
 					fired_channels.push_back(hit.global_chan);
 					total_counts[hit.global_chan]++;
+					fired_chipboards.push_back(GetChipboard(hit.global_chan));
 					MyFill(table,name.c_str(), name.c_str(), 16384,0,16384,hit.energy);
 				}
 			}
@@ -262,6 +285,7 @@ void testPlot()
 					name = "channel_"+std::to_string(hit.global_chan);
 					fired_channels.push_back(hit.global_chan);
 					total_counts[hit.global_chan]++;
+					fired_chipboards.push_back(GetChipboard(hit.global_chan));
 					MyFill(table, name.c_str(), name.c_str(), 16384,0,16384,hit.energy);
 				}
 			}
@@ -276,6 +300,7 @@ void testPlot()
 					name = "channel_"+std::to_string(hit.global_chan);
 					fired_channels.push_back(hit.global_chan);
 					total_counts[hit.global_chan]++;
+					fired_chipboards.push_back(GetChipboard(hit.global_chan));
 					MyFill(table, name.c_str(), name.c_str(), 16384,0,16384,hit.energy);
 				}
 			}
@@ -286,6 +311,7 @@ void testPlot()
 					name = "channel_"+std::to_string(hit.global_chan);
 					fired_channels.push_back(hit.global_chan);
 					total_counts[hit.global_chan]++;
+					fired_chipboards.push_back(GetChipboard(hit.global_chan));
 					MyFill(table, name.c_str(), name.c_str(), 16384,0,16384,hit.energy);
 				}
 			}
@@ -296,6 +322,7 @@ void testPlot()
 					name = "channel_"+std::to_string(hit.global_chan);
 					fired_channels.push_back(hit.global_chan);
 					total_counts[hit.global_chan]++;
+					fired_chipboards.push_back(GetChipboard(hit.global_chan));
 					MyFill(table, name.c_str(), name.c_str(), 16384,0,16384,hit.energy);
 				}
 			}
@@ -306,6 +333,7 @@ void testPlot()
 					name = "channel_"+std::to_string(hit.global_chan);
 					fired_channels.push_back(hit.global_chan);
 					total_counts[hit.global_chan]++;
+					fired_chipboards.push_back(GetChipboard(hit.global_chan));
 					MyFill(table, name.c_str(), name.c_str(), 16384,0,16384,hit.energy);
 				}
 			}
@@ -342,10 +370,28 @@ void testPlot()
 			channel_matrix[fired_channels[0]][544]++;
 			improper_channel_matrix[fired_channels[0]][544]++;
 		}
+		
+
+		for(unsigned int j=0; j<fired_chipboards.size(); j++)
+		{
+			for(unsigned int k=(j+1); k<fired_chipboards.size(); k++)
+			{
+				small = std::min(fired_chipboards[j], fired_chipboards[k]);
+				large = std::max(fired_chipboards[j], fired_chipboards[k]);
+				chipboard_matrix[small][large]++;
+				MyFill(table, "chipboard_correlations","Chipboard Correlations;ChipBoard;Chipboard",18,-1,17,small,18,-1,17,large);
+			}
+		}
+
+		if(fired_chipboards.size() == 1)
+		{
+			MyFill(table, "chipboard_correlations","Chipboard Correlations;ChipBoard;Chipboard",18,-1,17,fired_chipboards[0],18,-1,17,-1);
+			chipboard_matrix[fired_chipboards[0]][17]++;
+		}
 
 	}
 
-	std::ofstream output("ChannelMatrix.txt");
+	std::ofstream output("ChannelMatrix_runData.txt");
 	for(unsigned int i=0; i<channel_matrix.size(); i++)
 	{
 		output<<"----------------------------------------------------------"<<std::endl;
@@ -361,7 +407,7 @@ void testPlot()
 	}
 	output.close();
 
-	std::ofstream imoutput("ImproperChannelMatrix.txt");
+	std::ofstream imoutput("ImproperChannelMatrix_runData.txt");
 	for(unsigned int i=0; i<improper_channel_matrix.size(); i++)
 	{
 		imoutput<<"----------------------------------------------------------"<<std::endl;
@@ -376,6 +422,23 @@ void testPlot()
 		imoutput<<"----------------------------------------------------------"<<std::endl;
 	}
 	imoutput.close();
+
+	std::ofstream chipoutput("ChipboardMatrix_runData.txt");
+	chipoutput<<std::setw(6)<<" "<<"|";
+	for(unsigned int i=0; i<18; i++)
+		chipoutput<<std::setw(6)<<i<<"|";
+	chipoutput<<std::endl;
+	for(unsigned int i=0; i<chipboard_matrix.size(); i++)
+	{
+		chipoutput<<"-------------------------------------------------------------------------------------------------------------------------------------"<<std::endl;
+		chipoutput<<std::setw(6)<<i<<"|";
+		for(unsigned int j=0; j<chipboard_matrix[i].size(); j++)
+			chipoutput<<std::setw(6)<<chipboard_matrix[i][j]<<"|";
+		chipoutput<<std::endl;
+	}
+	chipoutput<<"-------------------------------------------------------------------------------------------------------------------------------------"<<std::endl;
+	chipoutput.close();
+
 	file->Close();
 
 	outfile->cd();

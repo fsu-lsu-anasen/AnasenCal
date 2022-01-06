@@ -10,13 +10,16 @@ R__LOAD_LIBRARY(../objs/libAnasenEvent_dict.so)
 
 void chainFiles()
 {
-	std::string outname = "/data1/gwm17/7BeNov2021/merged/allRuns.root";
+	int start = 2448;
+	int stop = 2477;
+	std::string mod = "_130keV_timed";
+	std::string outname = "/data1/gwm17/7BeNov2021/merged/runs-"+std::to_string(start)+"-"+std::to_string(stop)+mod+".root";
 	TFile* output = TFile::Open(outname.c_str(), "RECREATE");
 
 	std::string searchdir = "/data1/gwm17/7BeNov2021/runs/run-";
 
 	std::vector<int> runs;
-	for(int i=2376; i<2478; i++)
+	for(int i=start; i<(stop+1); i++)
 		runs.push_back(i); 
 
 	TChain* chainer = new TChain("EventTree", "EventTree");

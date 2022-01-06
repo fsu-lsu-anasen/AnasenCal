@@ -22,7 +22,7 @@ public:
 
 	void Run(const std::string& inputname, const std::string& outputname);
 private:
-	void FillEvent(AnasenEvent& event, int gchan, int energy);
+	void FillEvent(AnasenEvent& event, int gchan, int energy, int time);
 	//When switching from integers to floating point, need to smear within the bin.
 	inline double ConvertInt2Double(int value) { return value + generator->Uniform(0.0, 1.0); }
 

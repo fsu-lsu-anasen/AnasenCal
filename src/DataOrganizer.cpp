@@ -28,7 +28,7 @@ DataOrganizer::~DataOrganizer()
 /*
 	Method which actually fills the AnasenEvent. The event is passed by reference.
 */
-void DataOrganizer::FillEvent(AnasenEvent& event, int gchan, int energy)
+void DataOrganizer::FillEvent(AnasenEvent& event, int gchan, int energy, int time)
 {
 	if(energy == -1.0)
 		return;
@@ -42,6 +42,7 @@ void DataOrganizer::FillEvent(AnasenEvent& event, int gchan, int energy)
 	hit.global_chan = gchan;
 	hit.local_chan = channel->second.channel;
 	hit.energy = ConvertInt2Double(energy);
+	hit.time = ConvertInt2Double(time);
 
 	if(channel->second.detectorType == "BARREL1A" || channel->second.detectorType == "BARREL1B")
 	{
@@ -96,11 +97,15 @@ void DataOrganizer::Run(const std::string& inputname, const std::string& outputn
 	TFile* input = TFile::Open(inputname.c_str(), "READ");
 	TTree* intree = (TTree*) input->Get("DataTree");
 
-	int mb1_array[9][32];
-	int mb2_array[9][32];
+	int mb1_energy[9][32];
+	int mb2_energy[9][32];
+	int mb1_time[9][32];
+	int mb2_time[9][32];
 
-	intree->SetBranchAddress("mb1_energy", &mb1_array);
-	intree->SetBranchAddress("mb2_energy", &mb2_array);
+	intree->SetBranchAddress("mb1_energy", &mb1_energy);
+	intree->SetBranchAddress("mb1_time", &mb1_time);
+	intree->SetBranchAddress("mb2_energy", &mb2_energy);
+	intree->SetBranchAddress("mb2_time", &mb2_time);
 
 	TFile* output = TFile::Open(outputname.c_str(), "RECREATE");
 	TTree* outtree = new TTree("EventTree", "EventTree");
@@ -133,7 +138,7 @@ void DataOrganizer::Run(const std::string& inputname, const std::string& outputn
 			for(int k=0; k<32; k++)
 			{
 				gchan = j*32 + k;
-				FillEvent(event, gchan, mb1_array[j][k]);
+				FillEvent(event, gchan, mb1_energy[j][k], mb1_time[j][k]);
 			}
 		}
 
@@ -142,7 +147,7 @@ void DataOrganizer::Run(const std::string& inputname, const std::string& outputn
 			for(int k=0; k<32; k++)
 			{
 				gchan = mb2_gchan_offset + j*32 + k;
-				FillEvent(event, gchan, mb2_array[j][k]);
+				FillEvent(event, gchan, mb2_energy[j][k], mb2_time[j][k]);
 			}
 		}
 
