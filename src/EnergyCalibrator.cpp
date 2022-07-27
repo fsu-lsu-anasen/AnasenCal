@@ -26,8 +26,8 @@ bool SortEnergyData(const double i, const double j)
 	Note sigma, threshold: parameters passed to TSpectrum for peak searching, sigma is width and threshold is fraction
 	of maximum peak height. These may need adjusted for each experiment.
 */
-EnergyCalibrator::EnergyCalibrator(const std::string& channelfile, const std::string& zerofile, const std::string& backmatch, const std::string& updownmatch, const std::string& frontbackmatch) :
-	cmap(channelfile), zmap(zerofile), bmap(backmatch), udmap(updownmatch), fbmap(frontbackmatch), sigma(1.0), threshold(0.4)
+EnergyCalibrator::EnergyCalibrator(const std::string& channelfile, const std::string& backmatch, const std::string& updownmatch, const std::string& frontbackmatch) :
+	cmap(channelfile), bmap(backmatch), udmap(updownmatch), fbmap(frontbackmatch), sigma(1.0), threshold(0.4)
 {
 }
 
@@ -120,7 +120,7 @@ void EnergyCalibrator::Run(const std::string& inputname, const std::string& plot
 	}
 	TTree* intree = (TTree*) input->Get("EventTree");
 
-	AnasenEvent* event = new AnasenEvent();
+	CoincEvent* event = new CoincEvent();
 
 	intree->SetBranchAddress("event", &event);
 
@@ -165,25 +165,13 @@ void EnergyCalibrator::Run(const std::string& inputname, const std::string& plot
 		*/
 		for(int j=0; j<12; j++)
 		{
-			for(auto& hit : event->barrel1[j].backs)
+			for(auto& hit : event->barrel[j].backs)
 			{
-				name = "channel_"+std::to_string(hit.global_chan);
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				auto gains = bmap.FindParameters(hit.global_chan);
-				if(gains == bmap.End() || zero_offset == zmap.End())
+				name = "channel_"+std::to_string(hit.globalChannel);
+				auto gains = bmap.FindParameters(hit.globalChannel);
+				if(gains == bmap.End())
 					continue;
-				cal_energy = gains->second.slope*(hit.energy - zero_offset->second) + gains->second.intercept;
-				FillHistogram(histo_table, name, name, 925,600.0,8000.0, cal_energy);
-			}
-
-			for(auto& hit : event->barrel2[j].backs)
-			{
-				name = "channel_"+std::to_string(hit.global_chan);
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				auto gains = bmap.FindParameters(hit.global_chan);
-				if(gains == bmap.End() || zero_offset == zmap.End())
-					continue;
-				cal_energy = gains->second.slope*(hit.energy - zero_offset->second) + gains->second.intercept;
+				cal_energy = gains->second.slope*(hit.energy) + gains->second.intercept;
 				FillHistogram(histo_table, name, name, 925,600.0,8000.0, cal_energy);
 			}
 		}
@@ -192,43 +180,34 @@ void EnergyCalibrator::Run(const std::string& inputname, const std::string& plot
 		{
 			for(auto& hit : event->fqqq[j].rings)
 			{
-				name = "channel_"+std::to_string(hit.global_chan);
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				auto gains = fbmap.FindParameters(hit.global_chan);
-				if(gains == fbmap.End() || zero_offset == zmap.End())
+				name = "channel_"+std::to_string(hit.globalChannel);
+				auto gains = fbmap.FindParameters(hit.globalChannel);
+				if(gains == fbmap.End())
 					continue;
-				cal_energy = gains->second.slope*(hit.energy - zero_offset->second) + gains->second.intercept;
+				cal_energy = gains->second.slope*(hit.energy) + gains->second.intercept;
 				FillHistogram(histo_table, name, name, 925,600.0,8000.0, cal_energy);
 			}
 			for(auto& hit : event->fqqq[j].wedges)
 			{
-				name = "channel_"+std::to_string(hit.global_chan);
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				auto gains = bmap.FindParameters(hit.global_chan);
-				if(gains == bmap.End() || zero_offset == zmap.End())
+				name = "channel_"+std::to_string(hit.globalChannel);
+				auto gains = bmap.FindParameters(hit.globalChannel);
+				if(gains == bmap.End())
 					continue;
-				cal_energy = gains->second.slope*(hit.energy - zero_offset->second) + gains->second.intercept;
+				cal_energy = gains->second.slope*(hit.energy) + gains->second.intercept;
 				FillHistogram(histo_table, name, name, 925,600.0,8000.0, cal_energy);
 			}
-			for(auto& hit : event->bqqq[j].rings)
+		}
+		for(int j=0; j<6; j++)
+		{
+			for(auto& hit : event->barcUp[j].fronts)
 			{
-				name = "channel_"+std::to_string(hit.global_chan);
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				auto gains = fbmap.FindParameters(hit.global_chan);
-				if(gains == fbmap.End() || zero_offset == zmap.End())
-					continue;
-				cal_energy = gains->second.slope*(hit.energy - zero_offset->second) + gains->second.intercept;
-				FillHistogram(histo_table, name, name, 925,600.0,8000.0, cal_energy);
+				name = "channel_"+std::to_string(hit.globalChannel);
+				FillHistogram(histo_table, name, name, 100, 0, 4096.0, hit.energy);
 			}
-			for(auto& hit : event->bqqq[j].wedges)
+			for(auto& hit : event->barcDown[j].fronts)
 			{
-				name = "channel_"+std::to_string(hit.global_chan);
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				auto gains = bmap.FindParameters(hit.global_chan);
-				if(gains == bmap.End() || zero_offset == zmap.End())
-					continue;
-				cal_energy = gains->second.slope*(hit.energy - zero_offset->second) + gains->second.intercept;
-				FillHistogram(histo_table, name, name, 925,600.0,8000.0, cal_energy);
+				name = "channel_"+std::to_string(hit.globalChannel);
+				FillHistogram(histo_table, name, name, 100, 0, 4096.0, hit.energy);
 			}
 		}
 	}
@@ -277,27 +256,25 @@ void EnergyCalibrator::Run(const std::string& inputname, const std::string& plot
 
 		for(int j=0; j<12; j++)
 		{
-			for(auto& hit : event->barrel1[j].backs)
+			for(auto& hit : event->barrel[j].backs)
 			{
-				name = "channel_"+std::to_string(hit.global_chan)+"_calibrated";
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				auto gains = bmap.FindParameters(hit.global_chan);
-				auto ecal = energymap.FindParameters(hit.global_chan);
-				if(gains == bmap.End() || zero_offset == zmap.End() || ecal == energymap.End())
+				name = "channel_"+std::to_string(hit.globalChannel)+"_calibrated";
+				auto gains = bmap.FindParameters(hit.globalChannel);
+				auto ecal = energymap.FindParameters(hit.globalChannel);
+				if(gains == bmap.End() || ecal == energymap.End())
 					continue;
-				cal_energy = ecal->second.slope*(gains->second.slope*(hit.energy - zero_offset->second) + gains->second.intercept) + ecal->second.intercept;
+				cal_energy = ecal->second.slope*(gains->second.slope*(hit.energy) + gains->second.intercept) + ecal->second.intercept;
 				FillHistogram(histo_table, name, name, 1000.0,0.0,10.0, cal_energy);
 			}
 
-			for(auto& hit : event->barrel2[j].backs)
+			for(auto& hit : event->barrel[j].backs)
 			{
-				name = "channel_"+std::to_string(hit.global_chan)+"_calibrated";
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				auto gains = bmap.FindParameters(hit.global_chan);
-				auto ecal = energymap.FindParameters(hit.global_chan);
-				if(gains == bmap.End() || zero_offset == zmap.End() || ecal == energymap.End())
+				name = "channel_"+std::to_string(hit.globalChannel)+"_calibrated";
+				auto gains = bmap.FindParameters(hit.globalChannel);
+				auto ecal = energymap.FindParameters(hit.globalChannel);
+				if(gains == bmap.End() || ecal == energymap.End())
 					continue;
-				cal_energy = ecal->second.slope*(gains->second.slope*(hit.energy - zero_offset->second) + gains->second.intercept) + ecal->second.intercept;
+				cal_energy = ecal->second.slope*(gains->second.slope*(hit.energy) + gains->second.intercept) + ecal->second.intercept;
 				FillHistogram(histo_table, name, name, 1000.0,0.0,10.0, cal_energy);
 			}
 		}
@@ -306,46 +283,44 @@ void EnergyCalibrator::Run(const std::string& inputname, const std::string& plot
 		{
 			for(auto& hit : event->fqqq[j].rings)
 			{
-				name = "channel_"+std::to_string(hit.global_chan)+"_calibrated";
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				auto gains = fbmap.FindParameters(hit.global_chan);
-				auto ecal = energymap.FindParameters(hit.global_chan);
-				if(gains == fbmap.End() || zero_offset == zmap.End() || ecal == energymap.End())
+				name = "channel_"+std::to_string(hit.globalChannel)+"_calibrated";
+				auto gains = fbmap.FindParameters(hit.globalChannel);
+				auto ecal = energymap.FindParameters(hit.globalChannel);
+				if(gains == fbmap.End() || ecal == energymap.End())
 					continue;
-				cal_energy = ecal->second.slope*(gains->second.slope*(hit.energy - zero_offset->second) + gains->second.intercept) + ecal->second.intercept;
+				cal_energy = ecal->second.slope*(gains->second.slope*(hit.energy) + gains->second.intercept) + ecal->second.intercept;
 				FillHistogram(histo_table, name, name, 1000.0,0.0,10.0, cal_energy);
 			}
 			for(auto& hit : event->fqqq[j].wedges)
 			{
-				name = "channel_"+std::to_string(hit.global_chan)+"_calibrated";
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				auto gains = bmap.FindParameters(hit.global_chan);
-				auto ecal = energymap.FindParameters(hit.global_chan);
-				if(gains == bmap.End() || zero_offset == zmap.End() || ecal == energymap.End())
+				name = "channel_"+std::to_string(hit.globalChannel)+"_calibrated";
+				auto gains = bmap.FindParameters(hit.globalChannel);
+				auto ecal = energymap.FindParameters(hit.globalChannel);
+				if(gains == bmap.End() || ecal == energymap.End())
 					continue;
-				cal_energy = ecal->second.slope*(gains->second.slope*(hit.energy - zero_offset->second) + gains->second.intercept) + ecal->second.intercept;
+				cal_energy = ecal->second.slope*(gains->second.slope*(hit.energy) + gains->second.intercept) + ecal->second.intercept;
 				FillHistogram(histo_table, name, name, 1000.0,0.0,10.0, cal_energy);
 			}
-			for(auto& hit : event->bqqq[j].rings)
+		}
+
+		for(int j=0; j<6; j++)
+		{
+			for(auto& hit : event->barcUp[j].fronts)
 			{
-				name = "channel_"+std::to_string(hit.global_chan)+"_calibrated";
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				auto gains = fbmap.FindParameters(hit.global_chan);
-				auto ecal = energymap.FindParameters(hit.global_chan);
-				if(gains == fbmap.End() || zero_offset == zmap.End() || ecal == energymap.End())
+				name = "channel_"+std::to_string(hit.globalChannel)+"_calibrated";
+				auto ecal = energymap.FindParameters(hit.globalChannel);
+				if(ecal == energymap.End())
 					continue;
-				cal_energy = ecal->second.slope*(gains->second.slope*(hit.energy - zero_offset->second) + gains->second.intercept) + ecal->second.intercept;
+				cal_energy = ecal->second.slope*hit.energy + ecal->second.intercept;
 				FillHistogram(histo_table, name, name, 1000.0,0.0,10.0, cal_energy);
 			}
-			for(auto& hit : event->bqqq[j].wedges)
+			for(auto& hit : event->barcDown[j].fronts)
 			{
-				name = "channel_"+std::to_string(hit.global_chan)+"_calibrated";
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				auto gains = bmap.FindParameters(hit.global_chan);
-				auto ecal = energymap.FindParameters(hit.global_chan);
-				if(gains == bmap.End() || zero_offset == zmap.End() || ecal == energymap.End())
+				name = "channel_"+std::to_string(hit.globalChannel)+"_calibrated";
+				auto ecal = energymap.FindParameters(hit.globalChannel);
+				if(ecal == energymap.End())
 					continue;
-				cal_energy = ecal->second.slope*(gains->second.slope*(hit.energy - zero_offset->second) + gains->second.intercept) + ecal->second.intercept;
+				cal_energy = ecal->second.slope*hit.energy + ecal->second.intercept;
 				FillHistogram(histo_table, name, name, 1000.0,0.0,10.0, cal_energy);
 			}
 		}

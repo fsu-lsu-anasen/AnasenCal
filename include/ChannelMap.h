@@ -18,15 +18,14 @@
 struct ChannelData
 {
 	std::string detectorType="None"; //Identifier such as FQQQ, BARREL1A, etc.
-	std::string detectorID="None"; //Identifier such as 1 for FQQQ or A for BARREL1A
-	std::string detectorComponent="None"; //RING/WEDGE or FRONT/BACK
-	std::string detectorDirection="None"; //Only for SX3 Fronts -- indicates upstream or downstream
-	int channel=0; //Local channel in detector
+	int detectorID = -1;
+	std::string detectorComponent="None"; //RING/WEDGE or FRONT/FRONTUP/FRONTDOWN/BACK
+	int localChannel=0; //Local channel in detector
 
 	bool operator==(const ChannelData& rhs)
 	{
-		if(this->detectorType == rhs.detectorType && this->detectorID == rhs.detectorID && this->detectorComponent == rhs.detectorComponent && this->detectorDirection == rhs.detectorDirection
-			&& this->channel == rhs.channel)
+		if(this->detectorType == rhs.detectorType && this->detectorID == rhs.detectorID && this->detectorComponent == rhs.detectorComponent
+			&& this->localChannel == rhs.localChannel)
 		{
 			return true;
 		}
@@ -45,9 +44,6 @@ public:
 	inline Iterator FindChannel(int gchan) { return cmap.find(gchan); }
 	inline Iterator End() { return cmap.end(); }
 	int InverseFindChannel(const ChannelData& data);
-
-	int ConvertSX3Name2Index(const std::string& detectorType, const std::string& detectorID); //used to index the different detectors in data
-	int ConvertQQQName2Index(const std::string& detectorID);
 
 private:
 	void FillMap(const std::string& filename);

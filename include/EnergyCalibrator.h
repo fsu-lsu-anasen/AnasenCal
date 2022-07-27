@@ -17,14 +17,13 @@
 #include <TSpectrum.h>
 #include "ChannelMap.h"
 #include "ParameterMap.h"
-#include "ZeroCalMap.h"
 #include "DataStructs.h"
 
 
 class EnergyCalibrator {
   
 public:
-	EnergyCalibrator(const std::string& channelfile, const std::string& zerofile, const std::string& backmatch, const std::string& updownmatch, const std::string& frontbackmatch);
+	EnergyCalibrator(const std::string& channelfile, const std::string& backmatch, const std::string& updownmatch, const std::string& frontbackmatch);
 	~EnergyCalibrator();
 	void Run(const std::string& inputname, const std::string& plotname, const std::string& outputname);
 
@@ -36,11 +35,10 @@ private:
 	TSpectrum spec;
 
 	ChannelMap cmap;
-	ZeroCalMap zmap;
 	ParameterMap bmap, udmap, fbmap;
 
 	double sigma, threshold;
-	const int nchannels = 544;
+	const int nchannels = 640;
 
 	std::vector<double> energyValues = {5.155, 5.486, 5.805}; //Will need modified for each experiment.
 

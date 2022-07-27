@@ -5,6 +5,8 @@
 	as each step relies upon the previous results.
 
 	Written by Gordon McCann Nov 2021
+
+	Modified for use with the Barcelona-ANASEN scheme. Barcs don't get gain matched.
 */
 #include "GainMatcher.h"
 #include "ParameterMap.h"
@@ -23,8 +25,8 @@ bool SortGainData(const double i, const double j)
 	return i<j;
 }
 
-GainMatcher::GainMatcher(const std::string& channelfile, const std::string& zerofile) :
-	cmap(channelfile), zmap(zerofile)
+GainMatcher::GainMatcher(const std::string& channelfile) :
+	cmap(channelfile)
 {
 }
 
@@ -72,7 +74,7 @@ GraphData GainMatcher::GetPoints(THashTable* table, const std::string& name)
 	TH1* histo = (TH1*) table->FindObject(name.c_str());
 	if(histo == nullptr)
 	{
-		//std::cerr<<"Histogram named "<<name<<" not found at ZeroCalibrator::GetPoints! Returning empty data."<<std::endl;
+		//std::cerr<<"Histogram named "<<name<<" not found at GainMatcher::GetPoints! Returning empty data."<<std::endl;
 		return data;
 	}
 
@@ -130,16 +132,16 @@ CalParams GainMatcher::MakeGraph(THashTable* table, int gchan, const GraphData& 
 */
 void GainMatcher::MatchBacks(const std::string& inputname, const std::string& graphname, const std::string& outputname, int sx3match, int qqqmatch)
 {
-	if(!cmap.IsValid() || !zmap.IsValid())
+	if(!cmap.IsValid())
 	{
 		std::cerr<<"Bad map files at GainMatcher::Run! Exiting."<<std::endl;
 		return;
 	}
 
 	TFile* input = TFile::Open(inputname.c_str(), "READ");
-	TTree* intree = (TTree*) input->Get("EventTree");
+	TTree* intree = (TTree*) input->Get("SortTree");
 
-	AnasenEvent* event = new AnasenEvent();
+	CoincEvent* event = new CoincEvent();
 
 	intree->SetBranchAddress("event", &event);
 
@@ -160,20 +162,21 @@ void GainMatcher::MatchBacks(const std::string& inputname, const std::string& gr
 	for(int i=0; i<max_chan; i++)
 	{
 		auto channel = cmap.FindChannel(i);
-		if(channel->second.detectorComponent == "FRONT" || channel->second.detectorComponent == "RING")
+		if(channel == cmap.End() || channel->second.detectorType == "BARCUPSTREAM" || channel->second.detectorType == "BARCDOWNSTREAM" || 
+		   channel->second.detectorComponent == "FRONTUP" || channel->second.detectorComponent == "FRONTDOWN" || channel->second.detectorComponent == "RING")
 			continue;
 
 		match = channel->second;
 		if(match.detectorComponent == "BACK")
-			match.channel = sx3match;
+			match.localChannel = sx3match;
 		else if (match.detectorComponent == "WEDGE")
-			match.channel = qqqmatch;
+			match.localChannel = qqqmatch;
 		else
 			std::cerr<<"weird channel at GainMatcher::MatchBacks()"<<std::endl;
 
 		match_channel[i] = cmap.InverseFindChannel(match);
 		if(match_channel[i] == -1)
-			std::cerr<<"Found a zero to match against for GainMatcher::MatchBacks() gchan: "<<i<<" trying to match to detector channel: "<<match.channel<<std::endl;
+			std::cerr<<"Found a zero to match against for GainMatcher::MatchBacks() gchan: "<<i<<" trying to match to detector channel: "<<match.localChannel<<std::endl;
 	}
 
 	int nentries = intree->GetEntries();
@@ -197,41 +200,18 @@ void GainMatcher::MatchBacks(const std::string& inputname, const std::string& gr
 		*/
 		for(int j=0; j<12; j++)
 		{
-			for(auto& hit : event->barrel1[j].backs)
+			for(auto& hit : event->barrel[j].backs)
 			{
-				name = "channel_"+std::to_string(hit.global_chan);
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				if(zero_offset == zmap.End())
-					continue;
-				MyFill(histo_table, name.c_str(), name.c_str(), 875, 1000.0, 8000.0, hit.energy - zero_offset->second);
-			}
-			for(auto& hit : event->barrel2[j].backs)
-			{
-				name = "channel_"+std::to_string(hit.global_chan);
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				if(zero_offset == zmap.End())
-					continue;
-				MyFill(histo_table, name.c_str(), name.c_str(), 875, 1000.0, 8000.0, hit.energy - zero_offset->second);
+				name = "channel_"+std::to_string(hit.globalChannel);
+				MyFill(histo_table, name.c_str(), name.c_str(), 875, 1000.0, 8000.0, hit.energy);
 			}
 		}
-
 		for(int j=0; j<4; j++)
 		{
 			for(auto& hit : event->fqqq[j].wedges)
 			{
-				name = "channel_"+std::to_string(hit.global_chan);
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				if(zero_offset == zmap.End())
-					continue;
-				MyFill(histo_table, name.c_str(), name.c_str(), 875, 1000.0, 8000.0, hit.energy - zero_offset->second);
-			}
-			for(auto& hit : event->bqqq[j].wedges)
-			{
-				name = "channel_"+std::to_string(hit.global_chan);
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				if(zero_offset == zmap.End())
-					continue;
-				MyFill(histo_table, name.c_str(), name.c_str(), 875, 1000.0, 8000.0, hit.energy - zero_offset->second);
+				name = "channel_"+std::to_string(hit.globalChannel);
+				MyFill(histo_table, name.c_str(), name.c_str(), 875, 1000.0, 8000.0, hit.energy);
 			}
 		}
 	}
@@ -239,7 +219,9 @@ void GainMatcher::MatchBacks(const std::string& inputname, const std::string& gr
 	//Find the peaks from the energy spectra and store in an array.
 	for(int i=0; i<max_chan; i++)
 	{
-		if(cmap.FindChannel(i)->second.detectorComponent == "FRONT" || cmap.FindChannel(i)->second.detectorComponent == "RING")
+		auto channel = cmap.FindChannel(i);
+		if(channel == cmap.End() || channel->second.detectorType == "BARCUPSTREAM" || channel->second.detectorType == "BARCDOWNSTREAM" || 
+		   channel->second.detectorComponent == "FRONTUP" || channel->second.detectorComponent == "FRONTDOWN" || channel->second.detectorComponent == "RING")
 			continue;
 		name = "channel_"+std::to_string(i);
 		gain_data[i] = GetPoints(histo_table, name);
@@ -294,31 +276,14 @@ void GainMatcher::MatchBacks(const std::string& inputname, const std::string& gr
 
 		for(int j=0; j<12; j++)
 		{
-			before_name = "detector_barrel1_"+std::to_string(j)+"_before";
-			after_name = "detector_barrel1_"+std::to_string(j)+"_after";
-			for(auto& hit : event->barrel1[j].backs)
+			before_name = "detector_barrel_"+std::to_string(j)+"_before";
+			after_name = "detector_barrel_"+std::to_string(j)+"_after";
+			for(auto& hit : event->barrel[j].backs)
 			{
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				auto backgains = backmap.FindParameters(hit.global_chan);
-				if(zero_offset == zmap.End())
-					continue;
-				MyFill(histo_table, before_name.c_str(), before_name.c_str(), 875, 1000.0, 8000.0, hit.energy - zero_offset->second);
+				auto backgains = backmap.FindParameters(hit.globalChannel);
 				if(backgains == backmap.End())
 					continue;
-				MyFill(histo_table, after_name.c_str(), after_name.c_str(), 875, 1000.0, 8000.0, backgains->second.slope*(hit.energy - zero_offset->second)+backgains->second.intercept);
-			}
-			before_name = "detector_barrel2_"+std::to_string(j)+"_before";
-			after_name = "detector_barrel2_"+std::to_string(j)+"_after";
-			for(auto& hit : event->barrel2[j].backs)
-			{
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				auto backgains = backmap.FindParameters(hit.global_chan);
-				if(zero_offset == zmap.End())
-					continue;
-				MyFill(histo_table, before_name.c_str(), before_name.c_str(), 875, 1000.0, 8000.0, hit.energy - zero_offset->second);
-				if(backgains == backmap.End())
-					continue;
-				MyFill(histo_table, after_name.c_str(), after_name.c_str(), 875, 1000.0, 8000.0, backgains->second.slope*(hit.energy - zero_offset->second)+backgains->second.intercept);
+				MyFill(histo_table, after_name.c_str(), after_name.c_str(), 875, 1000.0, 8000.0, backgains->second.slope*(hit.energy)+backgains->second.intercept);
 			}
 		}
 
@@ -328,27 +293,10 @@ void GainMatcher::MatchBacks(const std::string& inputname, const std::string& gr
 			after_name = "detector_fqqq_"+std::to_string(j)+"_after";
 			for(auto& hit : event->fqqq[j].wedges)
 			{
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				auto backgains = backmap.FindParameters(hit.global_chan);
-				if(zero_offset == zmap.End())
-					continue;
-				MyFill(histo_table, before_name.c_str(), before_name.c_str(), 875, 1000.0, 8000.0, hit.energy - zero_offset->second);
+				auto backgains = backmap.FindParameters(hit.globalChannel);
 				if(backgains == backmap.End())
 					continue;
-				MyFill(histo_table, after_name.c_str(), after_name.c_str(), 875, 1000.0, 8000.0, backgains->second.slope*(hit.energy - zero_offset->second)+backgains->second.intercept);
-			}
-			before_name = "detector_bqqq_"+std::to_string(j)+"_before";
-			after_name = "detector_bqqq_"+std::to_string(j)+"_after";
-			for(auto& hit : event->bqqq[j].wedges)
-			{
-				auto zero_offset = zmap.FindOffset(hit.global_chan);
-				auto backgains = backmap.FindParameters(hit.global_chan);
-				if(zero_offset == zmap.End())
-					continue;
-				MyFill(histo_table, before_name.c_str(), before_name.c_str(), 875, 1000.0, 8000.0, hit.energy - zero_offset->second);
-				if(backgains == backmap.End())
-					continue;
-				MyFill(histo_table, after_name.c_str(), after_name.c_str(), 875, 1000.0, 8000.0, backgains->second.slope*(hit.energy - zero_offset->second)+backgains->second.intercept);
+				MyFill(histo_table, after_name.c_str(), after_name.c_str(), 875, 1000.0, 8000.0, backgains->second.slope*(hit.energy)+backgains->second.intercept);
 			}
 		}
 	}
@@ -376,7 +324,7 @@ void GainMatcher::MatchBacks(const std::string& inputname, const std::string& gr
 */
 void GainMatcher::MatchSX3UpDown(const std::string& inputname, const std::string& graphname, const std::string& outputname, const std::string& backmatchname)
 {
-	if(!cmap.IsValid() || !zmap.IsValid())
+	if(!cmap.IsValid())
 	{
 		std::cerr<<"Bad map files at GainMatcher::Run! Exiting."<<std::endl;
 		return;
@@ -385,14 +333,14 @@ void GainMatcher::MatchSX3UpDown(const std::string& inputname, const std::string
 	ParameterMap backmap(backmatchname);
 	if(!backmap.IsValid())
 	{
-		std::cerr<<"Back back-only gain-matching map at GainMatcher::MatchSX3UpDown(). Exiting."<<std::endl;
+		std::cerr<<"Bad back-only gain-matching map at GainMatcher::MatchSX3UpDown(). Exiting."<<std::endl;
 		return;
 	}
 
 	TFile* input = TFile::Open(inputname.c_str(), "READ");
 	TTree* intree = (TTree*) input->Get("EventTree");
 
-	AnasenEvent* event = new AnasenEvent();
+	CoincEvent* event = new CoincEvent();
 
 	intree->SetBranchAddress("event", &event);
 
@@ -431,75 +379,35 @@ void GainMatcher::MatchSX3UpDown(const std::string& inputname, const std::string
 		*/
 		for(int j=0; j<12; j++)
 		{
-			if(event->barrel1[j].fronts_up.size() > 0 && event->barrel1[j].fronts_down.size() > 0 && event->barrel1[j].backs.size() > 0)
+			if(event->barrel[j].frontsUp.size() > 0 && event->barrel[j].frontsDown.size() > 0 && event->barrel[j].backs.size() > 0)
 			{
-				for(auto& backhit : event->barrel1[j].backs)
+				for(auto& backhit : event->barrel[j].backs)
 				{
 					if(backhit.energy < 1000.0)
 						continue;
-					for(auto& fuphit : event->barrel1[j].fronts_up)
+					for(auto& fuphit : event->barrel[j].frontsUp)
 					{
-						for(auto& fdownhit : event->barrel1[j].fronts_down)
+						auto fup_channel = cmap.FindChannel(fuphit.globalChannel);
+						for(auto& fdownhit : event->barrel[j].frontsDown)
 						{
-							if(fuphit.local_chan != updown_list[fdownhit.local_chan])
+							auto fdown_channel = cmap.FindChannel(fdownhit.globalChannel);
+							if(fup_channel->second.localChannel != updown_list[fdown_channel->second.localChannel])
 							{
 								continue;
 							}
 
-							auto backgains = backmap.FindParameters(backhit.global_chan);
+							auto backgains = backmap.FindParameters(backhit.globalChannel);
 							if(backgains == backmap.End())
 								continue;
-							auto backzero_offset = zmap.FindOffset(backhit.global_chan);
-							auto fupzero_offset = zmap.FindOffset(fuphit.global_chan);
-							auto fdownzero_offset = zmap.FindOffset(fdownhit.global_chan);
-							if(backzero_offset == zmap.End() || fupzero_offset == zmap.End() || fdownzero_offset == zmap.End())
-								continue;
 		
-							cal_back = backgains->second.slope*(backhit.energy - backzero_offset->second) + backgains->second.intercept;
-							up_rel_energy = (fuphit.energy - fupzero_offset->second)/(cal_back);
-							down_rel_energy = (fdownhit.energy - fdownzero_offset->second)/cal_back;
+							cal_back = backgains->second.slope*(backhit.energy) + backgains->second.intercept;
+							up_rel_energy = (fuphit.energy)/(cal_back);
+							down_rel_energy = (fdownhit.energy)/cal_back;
 							if(up_rel_energy > 1.3 || down_rel_energy > 1.3 || cal_back < 0 || up_rel_energy < 0 || down_rel_energy < 0
 								|| (up_rel_energy+down_rel_energy) < 0.5 || (up_rel_energy + down_rel_energy)>1.5)
 								continue;
-							gain_data[fuphit.global_chan].xvals.push_back(up_rel_energy);
-							gain_data[fuphit.global_chan].yvals.push_back(down_rel_energy);
-						}
-					}
-				}
-			}
-
-			if(event->barrel2[j].fronts_up.size() > 0 && event->barrel2[j].fronts_down.size() > 0 && event->barrel2[j].backs.size() > 0)
-			{
-				for(auto& backhit : event->barrel2[j].backs)
-				{
-					if(backhit.energy < 1000.0)
-						continue;
-					for(auto& fuphit : event->barrel2[j].fronts_up)
-					{
-						for(auto& fdownhit : event->barrel2[j].fronts_down)
-						{
-							if(fuphit.local_chan != updown_list[fdownhit.local_chan])
-							{
-								continue;
-							}
-
-							auto backgains = backmap.FindParameters(backhit.global_chan);
-							if(backgains == backmap.End())
-								continue;
-							auto backzero_offset = zmap.FindOffset(backhit.global_chan);
-							auto fupzero_offset = zmap.FindOffset(fuphit.global_chan);
-							auto fdownzero_offset = zmap.FindOffset(fdownhit.global_chan);
-							if(backzero_offset == zmap.End() || fupzero_offset == zmap.End() || fdownzero_offset == zmap.End())
-								continue;
-		
-							cal_back = backgains->second.slope*(backhit.energy - backzero_offset->second) + backgains->second.intercept;
-							up_rel_energy = (fuphit.energy - fupzero_offset->second)/(cal_back);
-							down_rel_energy = (fdownhit.energy - fdownzero_offset->second)/cal_back;
-							if(up_rel_energy > 1.5 || down_rel_energy > 1.5 || cal_back < 0 || up_rel_energy < 0 || down_rel_energy < 0
-								|| (up_rel_energy+down_rel_energy) < 0.5 || (up_rel_energy + down_rel_energy)>1.5)
-								continue;
-							gain_data[fuphit.global_chan].xvals.push_back(up_rel_energy);
-							gain_data[fuphit.global_chan].yvals.push_back(down_rel_energy);
+							gain_data[fuphit.globalChannel].xvals.push_back(up_rel_energy);
+							gain_data[fuphit.globalChannel].yvals.push_back(down_rel_energy);
 						}
 					}
 				}
@@ -546,83 +454,39 @@ void GainMatcher::MatchSX3UpDown(const std::string& inputname, const std::string
 
 		for(int j=0; j<12; j++)
 		{
-			if(event->barrel1[j].fronts_up.size() > 0 && event->barrel1[j].fronts_down.size() > 0 && event->barrel1[j].backs.size() > 0)
+			if(event->barrel[j].frontsUp.size() > 0 && event->barrel[j].frontsDown.size() > 0 && event->barrel[j].backs.size() > 0)
 			{
-				for(auto& backhit : event->barrel1[j].backs)
+				for(auto& backhit : event->barrel[j].backs)
 				{
 					if(backhit.energy < 1000.0)
 						continue;
-					for(auto& fuphit : event->barrel1[j].fronts_up)
+					for(auto& fuphit : event->barrel[j].frontsUp)
 					{
-						for(auto& fdownhit : event->barrel1[j].fronts_down)
+						auto fup_channel = cmap.FindChannel(fuphit.globalChannel);
+						for(auto& fdownhit : event->barrel[j].frontsDown)
 						{
-							if(fuphit.local_chan != updown_list[fdownhit.local_chan])
+							auto fdown_channel = cmap.FindChannel(fdownhit.globalChannel);
+							if(fup_channel->second.localChannel != updown_list[fdown_channel->second.localChannel])
 							{
 								continue;
 							}
 
-							auto backgains = backmap.FindParameters(backhit.global_chan);
+							auto backgains = backmap.FindParameters(backhit.globalChannel);
 							if(backgains == backmap.End())
 								continue;
-							auto backzero_offset = zmap.FindOffset(backhit.global_chan);
-							auto fupzero_offset = zmap.FindOffset(fuphit.global_chan);
-							auto fdownzero_offset = zmap.FindOffset(fdownhit.global_chan);
-							if(backzero_offset == zmap.End() || fupzero_offset == zmap.End() || fdownzero_offset == zmap.End())
-								continue;
 		
-							cal_back = backgains->second.slope*(backhit.energy - backzero_offset->second) + backgains->second.intercept;
-							up_rel_energy = (fuphit.energy - fupzero_offset->second)/(cal_back);
-							down_rel_energy = (fdownhit.energy - fdownzero_offset->second)/cal_back;
+							cal_back = backgains->second.slope*(backhit.energy) + backgains->second.intercept;
+							up_rel_energy = (fuphit.energy)/(cal_back);
+							down_rel_energy = (fdownhit.energy)/cal_back;
 							if(up_rel_energy > 1.5 || down_rel_energy > 1.5 || cal_back < 0 || up_rel_energy < 0 || down_rel_energy < 0)
 								continue;
-							before_name = "detector_barrel1_"+std::to_string(j)+"_before_channels_"+std::to_string(fuphit.local_chan)+"_"+std::to_string(fdownhit.local_chan);
+							before_name = "detector_barrelTop_"+std::to_string(j)+"_before_channels_"+std::to_string(fup_channel->second.localChannel)+"_"+std::to_string(fdown_channel->second.localChannel);
 							MyFill(histo_table, before_name, ";Up;Down", 1000.0, 0.0, 1.0, up_rel_energy, 1000.0, 0.0, 1.0, down_rel_energy);
-							auto upgains = updownmap.FindParameters(fuphit.global_chan);
+							auto upgains = updownmap.FindParameters(fuphit.globalChannel);
 							if(upgains == updownmap.End())
 								continue;
-							after_name = "detector_barrel1_"+std::to_string(j)+"_after_channels_"+std::to_string(fuphit.local_chan)+"_"+std::to_string(fdownhit.local_chan);
+							after_name = "detector_barrelTop_"+std::to_string(j)+"_after_channels_"+std::to_string(fup_channel->second.localChannel)+"_"+std::to_string(fdown_channel->second.localChannel);
 							MyFill(histo_table, after_name, ";Up;Down", 1000.0, 0.0, 1.0, 1.0 - upgains->second.slope*up_rel_energy-upgains->second.intercept, 1000.0, 0.0, 1.0, down_rel_energy);
-						}
-					}
-				}
-			}
-
-			if(event->barrel2[j].fronts_up.size() > 0 && event->barrel2[j].fronts_down.size() > 0 && event->barrel2[j].backs.size() > 0)
-			{
-				for(auto& backhit : event->barrel2[j].backs)
-				{
-					if(backhit.energy < 1000.0)
-						continue;
-					for(auto& fuphit : event->barrel2[j].fronts_up)
-					{
-						for(auto& fdownhit : event->barrel2[j].fronts_down)
-						{
-							if(fuphit.local_chan != updown_list[fdownhit.local_chan])
-							{
-								continue;
-							}
-
-							auto backgains = backmap.FindParameters(backhit.global_chan);
-							if(backgains == backmap.End())
-								continue;
-							auto backzero_offset = zmap.FindOffset(backhit.global_chan);
-							auto fupzero_offset = zmap.FindOffset(fuphit.global_chan);
-							auto fdownzero_offset = zmap.FindOffset(fdownhit.global_chan);
-							if(backzero_offset == zmap.End() || fupzero_offset == zmap.End() || fdownzero_offset == zmap.End())
-								continue;
-		
-							cal_back = backgains->second.slope*(backhit.energy - backzero_offset->second) + backgains->second.intercept;
-							up_rel_energy = (fuphit.energy - fupzero_offset->second)/(cal_back);
-							down_rel_energy = (fdownhit.energy - fdownzero_offset->second)/cal_back;
-							if(up_rel_energy > 1.5 || down_rel_energy > 1.5 || cal_back < 0 || up_rel_energy < 0 || down_rel_energy < 0)
-								continue;
-							before_name = "detector_barrel2_"+std::to_string(j)+"_before_channels_"+std::to_string(fuphit.local_chan)+"_"+std::to_string(fdownhit.local_chan);
-							MyFill(histo_table, before_name, ";Up;Down", 1000.0, 0.0, 1.0, up_rel_energy, 1000.0, 0.0, 1.0, down_rel_energy);
-							auto upgains = updownmap.FindParameters(fuphit.global_chan);
-							if(upgains == updownmap.End())
-								continue;
-							after_name = "detector_barrel2_"+std::to_string(j)+"_after_channels_"+std::to_string(fuphit.local_chan)+"_"+std::to_string(fdownhit.local_chan);
-							MyFill(histo_table, after_name, ";Up;Down", 1000.0, 0.0, 1.0, upgains->second.slope*up_rel_energy+upgains->second.intercept, 1000.0, 0.0, 1.0, down_rel_energy);
 						}
 					}
 				}
@@ -648,7 +512,7 @@ void GainMatcher::MatchSX3UpDown(const std::string& inputname, const std::string
 */
 void GainMatcher::MatchFrontBack(const std::string& inputname, const std::string& graphname, const std::string& outputname, const std::string& backmatchname, const std::string& updownmatchname)
 {
-	if(!cmap.IsValid() || !zmap.IsValid())
+	if(!cmap.IsValid())
 	{
 		std::cerr<<"Bad map files at GainMatcher::Run! Exiting."<<std::endl;
 		return;
@@ -665,7 +529,7 @@ void GainMatcher::MatchFrontBack(const std::string& inputname, const std::string
 	TFile* input = TFile::Open(inputname.c_str(), "READ");
 	TTree* intree = (TTree*) input->Get("EventTree");
 
-	AnasenEvent* event = new AnasenEvent();
+	CoincEvent* event = new CoincEvent();
 
 	intree->SetBranchAddress("event", &event);
 
@@ -701,69 +565,32 @@ void GainMatcher::MatchFrontBack(const std::string& inputname, const std::string
 		*/
 		for(int j=0; j<12; j++)
 		{
-			if(event->barrel1[j].fronts_up.size() > 0 && event->barrel1[j].fronts_down.size() > 0 && event->barrel1[j].backs.size() > 0)
+			if(event->barrel[j].frontsUp.size() > 0 && event->barrel[j].frontsDown.size() > 0 && event->barrel[j].backs.size() > 0)
 			{
-				for(auto& backhit : event->barrel1[j].backs)
+				for(auto& backhit : event->barrel[j].backs)
 				{
-					for(auto& fuphit : event->barrel1[j].fronts_up)
+					for(auto& fuphit : event->barrel[j].frontsUp)
 					{
-						for(auto& fdownhit : event->barrel1[j].fronts_down)
+						auto fup_channel = cmap.FindChannel(fuphit.globalChannel);
+						for(auto& fdownhit : event->barrel[j].frontsDown)
 						{
-							if(fuphit.local_chan != updown_list[fdownhit.local_chan])
+							auto fdown_channel = cmap.FindChannel(fdownhit.globalChannel);
+							if(fup_channel->second.localChannel != updown_list[fdown_channel->second.localChannel])
 								continue;
-							auto backgains = backmap.FindParameters(backhit.global_chan);
+							auto backgains = backmap.FindParameters(backhit.globalChannel);
 							if(backgains == backmap.End())
 								continue;
-							auto upgains = updownmap.FindParameters(fuphit.global_chan);
+							auto upgains = updownmap.FindParameters(fuphit.globalChannel);
 							if(upgains == updownmap.End())
 								continue;
-							auto backzero_offset = zmap.FindOffset(backhit.global_chan);
-							auto fupzero_offset = zmap.FindOffset(fuphit.global_chan);
-							auto fdownzero_offset = zmap.FindOffset(fdownhit.global_chan);
-							if(backzero_offset == zmap.End() || fupzero_offset == zmap.End() || fdownzero_offset == zmap.End())
-								continue;
 		
-							cal_back = backgains->second.slope*(backhit.energy - backzero_offset->second) + backgains->second.intercept;
-							cal_up_energy = cal_back - upgains->second.slope*(fuphit.energy - fupzero_offset->second) - upgains->second.intercept*cal_back;
-							cal_down_energy = fdownhit.energy - fdownzero_offset->second;
+							cal_back = backgains->second.slope*(backhit.energy) + backgains->second.intercept;
+							cal_up_energy = cal_back - upgains->second.slope*(fuphit.energy) - upgains->second.intercept*cal_back;
+							cal_down_energy = fdownhit.energy;
 							if(cal_back < 100 || cal_up_energy < 100 || cal_down_energy < 100 || (cal_up_energy+cal_down_energy)/cal_back > 1.2 || (cal_up_energy+cal_down_energy)/cal_back < 0.8)
 								continue;
-							gain_data[fuphit.global_chan].xvals.push_back(cal_up_energy+cal_down_energy);
-							gain_data[fuphit.global_chan].yvals.push_back(cal_back);
-						}
-					}
-				}
-			}
-
-			if(event->barrel2[j].fronts_up.size() > 0 && event->barrel2[j].fronts_down.size() > 0 && event->barrel2[j].backs.size() > 0)
-			{
-				for(auto& backhit : event->barrel2[j].backs)
-				{
-					for(auto& fuphit : event->barrel2[j].fronts_up)
-					{
-						for(auto& fdownhit : event->barrel2[j].fronts_down)
-						{
-							if(fuphit.local_chan != updown_list[fdownhit.local_chan])
-								continue;
-							auto backgains = backmap.FindParameters(backhit.global_chan);
-							if(backgains == backmap.End())
-								continue;
-							auto upgains = updownmap.FindParameters(fuphit.global_chan);
-							if(upgains == updownmap.End())
-								continue;
-							auto backzero_offset = zmap.FindOffset(backhit.global_chan);
-							auto fupzero_offset = zmap.FindOffset(fuphit.global_chan);
-							auto fdownzero_offset = zmap.FindOffset(fdownhit.global_chan);
-							if(backzero_offset == zmap.End() || fupzero_offset == zmap.End() || fdownzero_offset == zmap.End())
-								continue;
-		
-							cal_back = backgains->second.slope*(backhit.energy - backzero_offset->second) + backgains->second.intercept;
-							cal_up_energy = cal_back - upgains->second.slope*(fuphit.energy - fupzero_offset->second) - upgains->second.intercept*cal_back;
-							cal_down_energy = fdownhit.energy - fdownzero_offset->second;
-							if(cal_back < 100 || cal_up_energy < 100 || cal_down_energy < 100 || (cal_up_energy+cal_down_energy)/cal_back > 1.2 || (cal_up_energy+cal_down_energy)/cal_back < 0.8)
-								continue;
-							gain_data[fuphit.global_chan].xvals.push_back(cal_up_energy+cal_down_energy);
-							gain_data[fuphit.global_chan].yvals.push_back(cal_back);
+							gain_data[fuphit.globalChannel].xvals.push_back(cal_up_energy+cal_down_energy);
+							gain_data[fuphit.globalChannel].yvals.push_back(cal_back);
 						}
 					}
 				}
@@ -778,43 +605,16 @@ void GainMatcher::MatchFrontBack(const std::string& inputname, const std::string
 				{
 					for(auto& ringhit : event->fqqq[j].rings)
 					{
-						auto wedgegains = backmap.FindParameters(wedgehit.global_chan);
+						auto wedgegains = backmap.FindParameters(wedgehit.globalChannel);
 						if(wedgegains == backmap.End())
 							continue;
-						auto wedgezero_offset = zmap.FindOffset(wedgehit.global_chan);
-						auto ringzero_offset = zmap.FindOffset(ringhit.global_chan);
-						if(wedgezero_offset == zmap.End() || ringzero_offset == zmap.End())
-							continue;
 	
-						cal_back = wedgegains->second.slope*(wedgehit.energy - wedgezero_offset->second) + wedgegains->second.intercept;
-						cal_up_energy = ringhit.energy - ringzero_offset->second;
+						cal_back = wedgegains->second.slope*(wedgehit.energy) + wedgegains->second.intercept;
+						cal_up_energy = ringhit.energy;
 						if(cal_back < 0 || cal_up_energy < 0 || cal_up_energy/cal_back > 1.2 || cal_up_energy/cal_back < 0.8)
 							continue;
-						gain_data[ringhit.global_chan].xvals.push_back(cal_up_energy);
-						gain_data[ringhit.global_chan].yvals.push_back(cal_back);
-					}
-				}
-			}
-			if(event->bqqq[j].rings.size() > 0 && event->bqqq[j].wedges.size() > 0)
-			{
-				for(auto& wedgehit : event->bqqq[j].wedges)
-				{
-					for(auto& ringhit : event->bqqq[j].rings)
-					{
-						auto wedgegains = backmap.FindParameters(wedgehit.global_chan);
-						if(wedgegains == backmap.End())
-							continue;
-						auto wedgezero_offset = zmap.FindOffset(wedgehit.global_chan);
-						auto ringzero_offset = zmap.FindOffset(ringhit.global_chan);
-						if(wedgezero_offset == zmap.End() || ringzero_offset == zmap.End())
-							continue;
-	
-						cal_back = wedgegains->second.slope*(wedgehit.energy - wedgezero_offset->second) + wedgegains->second.intercept;
-						cal_up_energy = ringhit.energy - ringzero_offset->second;
-						if(cal_back < 0 || cal_up_energy < 0 || cal_up_energy/cal_back > 1.2 || cal_up_energy/cal_back < 0.8)
-							continue;
-						gain_data[ringhit.global_chan].xvals.push_back(cal_up_energy);
-						gain_data[ringhit.global_chan].yvals.push_back(cal_back);
+						gain_data[ringhit.globalChannel].xvals.push_back(cal_up_energy);
+						gain_data[ringhit.globalChannel].yvals.push_back(cal_back);
 					}
 				}
 			}
@@ -859,78 +659,36 @@ void GainMatcher::MatchFrontBack(const std::string& inputname, const std::string
 
 		for(int j=0; j<12; j++)
 		{
-			if(event->barrel1[j].fronts_up.size() > 0 && event->barrel1[j].fronts_down.size() > 0 && event->barrel1[j].backs.size() > 0)
+			if(event->barrel[j].frontsUp.size() > 0 && event->barrel[j].frontsDown.size() > 0 && event->barrel[j].backs.size() > 0)
 			{
-				for(auto& backhit : event->barrel1[j].backs)
+				for(auto& backhit : event->barrel[j].backs)
 				{
-					for(auto& fuphit : event->barrel1[j].fronts_up)
+					for(auto& fuphit : event->barrel[j].frontsUp)
 					{
-						for(auto& fdownhit : event->barrel1[j].fronts_down)
+						auto fup_channel = cmap.FindChannel(fuphit.globalChannel);
+						for(auto& fdownhit : event->barrel[j].frontsDown)
 						{
-							if(fuphit.local_chan != updown_list[fdownhit.local_chan])
+							auto fdown_channel = cmap.FindChannel(fdownhit.globalChannel);
+							if(fup_channel->second.localChannel != updown_list[fdown_channel->second.localChannel])
 								continue;
-							auto backgains = backmap.FindParameters(backhit.global_chan);
+							auto backgains = backmap.FindParameters(backhit.globalChannel);
 							if(backgains == backmap.End())
 								continue;
-							auto upgains = updownmap.FindParameters(fuphit.global_chan);
+							auto upgains = updownmap.FindParameters(fuphit.globalChannel);
 							if(upgains == updownmap.End())
 								continue;
-							auto backzero_offset = zmap.FindOffset(backhit.global_chan);
-							auto fupzero_offset = zmap.FindOffset(fuphit.global_chan);
-							auto fdownzero_offset = zmap.FindOffset(fdownhit.global_chan);
-							if(backzero_offset == zmap.End() || fupzero_offset == zmap.End() || fdownzero_offset == zmap.End())
-								continue;
 		
-							cal_back = backgains->second.slope*(backhit.energy - backzero_offset->second) + backgains->second.intercept;
-							cal_up_energy = cal_back - upgains->second.slope*(fuphit.energy - fupzero_offset->second) - upgains->second.intercept*cal_back;
-							cal_down_energy = fdownhit.energy - fdownzero_offset->second;
+							cal_back = backgains->second.slope*(backhit.energy) + backgains->second.intercept;
+							cal_up_energy = cal_back - upgains->second.slope*(fuphit.energy) - upgains->second.intercept*cal_back;
+							cal_down_energy = fdownhit.energy;
 							if(cal_back < 100 || cal_up_energy < 100 || cal_down_energy < 100 || (cal_up_energy+cal_down_energy)/cal_back > 1.2 || (cal_up_energy+cal_down_energy)/cal_back < 0.8)
 								continue;
-							before_name = "channel_"+std::to_string(fuphit.global_chan)+"_before";
+							before_name = "channel_"+std::to_string(fuphit.globalChannel)+"_before";
 							MyFill(histo_table, before_name,";Front;Back",1024,0.0,16384,cal_up_energy+cal_down_energy,1024,0,16384,cal_back);
-							auto frontbackgains = frontbackmap.FindParameters(fuphit.global_chan);
+							auto frontbackgains = frontbackmap.FindParameters(fuphit.globalChannel);
 							if(frontbackgains == frontbackmap.End())
 								continue;
-							after_name = "channel_"+std::to_string(fuphit.global_chan)+"_after";
-							MyFill(histo_table, after_name, ";Front;Back",1024,0,16384,frontbackgains->second.slope*(cal_up_energy+cal_down_energy)+frontbackgains->second.intercept,1024,0,16384,cal_back);
-						}
-					}
-				}
-			}
-
-			if(event->barrel2[j].fronts_up.size() > 0 && event->barrel2[j].fronts_down.size() > 0 && event->barrel2[j].backs.size() > 0)
-			{
-				for(auto& backhit : event->barrel2[j].backs)
-				{
-					for(auto& fuphit : event->barrel2[j].fronts_up)
-					{
-						for(auto& fdownhit : event->barrel2[j].fronts_down)
-						{
-							if(fuphit.local_chan != updown_list[fdownhit.local_chan])
-								continue;
-							auto backgains = backmap.FindParameters(backhit.global_chan);
-							if(backgains == backmap.End())
-								continue;
-							auto upgains = updownmap.FindParameters(fuphit.global_chan);
-							if(upgains == updownmap.End())
-								continue;
-							auto backzero_offset = zmap.FindOffset(backhit.global_chan);
-							auto fupzero_offset = zmap.FindOffset(fuphit.global_chan);
-							auto fdownzero_offset = zmap.FindOffset(fdownhit.global_chan);
-							if(backzero_offset == zmap.End() || fupzero_offset == zmap.End() || fdownzero_offset == zmap.End())
-								continue;
-		
-							cal_back = backgains->second.slope*(backhit.energy - backzero_offset->second) + backgains->second.intercept;
-							cal_up_energy = cal_back - upgains->second.slope*(fuphit.energy - fupzero_offset->second) - upgains->second.intercept*cal_back;
-							cal_down_energy = fdownhit.energy - fdownzero_offset->second;
-							if(cal_back < 100 || cal_up_energy < 100 || cal_down_energy < 100 || (cal_up_energy+cal_down_energy)/cal_back > 1.2 || (cal_up_energy+cal_down_energy)/cal_back < 0.8)
-								continue;
-							before_name = "channel_"+std::to_string(fuphit.global_chan)+"_before";
-							MyFill(histo_table, before_name,";Front;Back",1024,0.0,16384,cal_up_energy+cal_down_energy,1024,0,16384,cal_back);
-							auto frontbackgains = frontbackmap.FindParameters(fuphit.global_chan);
-							if(frontbackgains == frontbackmap.End())
-								continue;
-							after_name = "channel_"+std::to_string(fuphit.global_chan)+"_after";
+							after_name = "channel_"+std::to_string(fuphit.globalChannel)+"_after";
 							MyFill(histo_table, after_name, ";Front;Back",1024,0,16384,frontbackgains->second.slope*(cal_up_energy+cal_down_energy)+frontbackgains->second.intercept,1024,0,16384,cal_back);
 						}
 					}
@@ -946,52 +704,20 @@ void GainMatcher::MatchFrontBack(const std::string& inputname, const std::string
 				{
 					for(auto& ringhit : event->fqqq[j].rings)
 					{
-						auto wedgegains = backmap.FindParameters(wedgehit.global_chan);
+						auto wedgegains = backmap.FindParameters(wedgehit.globalChannel);
 						if(wedgegains == backmap.End())
 							continue;
-						auto wedgezero_offset = zmap.FindOffset(wedgehit.global_chan);
-						auto ringzero_offset = zmap.FindOffset(ringhit.global_chan);
-						if(wedgezero_offset == zmap.End() || ringzero_offset == zmap.End())
-							continue;
 	
-						cal_back = wedgegains->second.slope*(wedgehit.energy - wedgezero_offset->second) + wedgegains->second.intercept;
-						cal_up_energy = ringhit.energy - ringzero_offset->second;
+						cal_back = wedgegains->second.slope*(wedgehit.energy) + wedgegains->second.intercept;
+						cal_up_energy = ringhit.energy;
 						if(cal_back < 0 || cal_up_energy < 0 || cal_up_energy/cal_back > 1.2 || cal_up_energy/cal_back < 0.8)
 							continue;
-						before_name = "channel_"+std::to_string(ringhit.global_chan)+"_before";
+						before_name = "channel_"+std::to_string(ringhit.globalChannel)+"_before";
 						MyFill(histo_table, before_name,";Front;Back",1024,0.0,16384,cal_up_energy,1024,0,16384,cal_back);
-						auto frontbackgains = frontbackmap.FindParameters(ringhit.global_chan);
+						auto frontbackgains = frontbackmap.FindParameters(ringhit.globalChannel);
 						if(frontbackgains == frontbackmap.End())
 							continue;
-						after_name = "channel_"+std::to_string(ringhit.global_chan)+"_after";
-						MyFill(histo_table, after_name, ";Front;Back",1024,0,16384,frontbackgains->second.slope*cal_up_energy+frontbackgains->second.intercept,1024,0,16384,cal_back);
-					}
-				}
-			}
-			if(event->bqqq[j].rings.size() > 0 && event->bqqq[j].wedges.size() > 0)
-			{
-				for(auto& wedgehit : event->bqqq[j].wedges)
-				{
-					for(auto& ringhit : event->bqqq[j].rings)
-					{
-						auto wedgegains = backmap.FindParameters(wedgehit.global_chan);
-						if(wedgegains == backmap.End())
-							continue;
-						auto wedgezero_offset = zmap.FindOffset(wedgehit.global_chan);
-						auto ringzero_offset = zmap.FindOffset(ringhit.global_chan);
-						if(wedgezero_offset == zmap.End() || ringzero_offset == zmap.End())
-							continue;
-	
-						cal_back = wedgegains->second.slope*(wedgehit.energy - wedgezero_offset->second) + wedgegains->second.intercept;
-						cal_up_energy = ringhit.energy - ringzero_offset->second;
-						if(cal_back < 0 || cal_up_energy < 0 || cal_up_energy/cal_back > 1.2 || cal_up_energy/cal_back < 0.8)
-							continue;
-						before_name = "channel_"+std::to_string(ringhit.global_chan)+"_before";
-						MyFill(histo_table, before_name,";Front;Back",1024,0.0,16384,cal_up_energy,1024,0,16384,cal_back);
-						auto frontbackgains = frontbackmap.FindParameters(ringhit.global_chan);
-						if(frontbackgains == frontbackmap.End())
-							continue;
-						after_name = "channel_"+std::to_string(ringhit.global_chan)+"_after";
+						after_name = "channel_"+std::to_string(ringhit.globalChannel)+"_after";
 						MyFill(histo_table, after_name, ";Front;Back",1024,0,16384,frontbackgains->second.slope*cal_up_energy+frontbackgains->second.intercept,1024,0,16384,cal_back);
 					}
 				}

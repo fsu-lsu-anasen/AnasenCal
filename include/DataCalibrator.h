@@ -11,20 +11,18 @@
 
 #include <string>
 #include "ChannelMap.h"
-#include "ZeroCalMap.h"
 #include "ParameterMap.h"
 
 class DataCalibrator
 {
 public:
-	DataCalibrator(const std::string& channelfile, const std::string& zerofile, const std::string& backmatch, const std::string& updownmatch, 
+	DataCalibrator(const std::string& channelfile, const std::string& backmatch, const std::string& updownmatch, 
 					const std::string& frontbackmatch, const std::string& energyfile);
 	~DataCalibrator();
 	void Run(const std::string& inputname, const std::string& outputname);
 
 private:
 	ChannelMap channel_map;
-	ZeroCalMap zero_map;
 	ParameterMap back_map, updown_map, frontback_map, energy_map;
 	const int updown_list[8] = {1, 0, 3, 2, 5, 4, 7, 6}; //matches index -> index of up/down pair for SX3 fronts
 };

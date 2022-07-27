@@ -1,26 +1,24 @@
 #include "DeadChannelMap.h"
 #include "ChannelMap.h"
-#include "ZeroCalMap.h"
 #include "ParameterMap.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
 
-void GenerateDeadChannelMap(const std::string& zoffset, const std::string& backmatch, const std::string& updownmatch, const std::string& frontbackmatch,
-							const std::string& energycal, const std::string& channelfile, const std::string& deadname)
+void GenerateDeadChannelMap(const std::string& backmatch, const std::string& updownmatch, const std::string& frontbackmatch, const std::string& energycal,
+		            const std::string& channelfile, const std::string& deadname)
 {
 
 	ChannelMap cmap(channelfile);
-	ZeroCalMap zmap(zoffset);
 	ParameterMap backmap(backmatch), updownmap(updownmatch), frontbackmap(frontbackmatch), energymap(energycal);
 
-	if(!cmap.IsValid() || ! zmap.IsValid() || !backmap.IsValid() || !updownmap.IsValid() || !frontbackmap.IsValid() || !energymap.IsValid())
+	if(!cmap.IsValid() || !backmap.IsValid() || !updownmap.IsValid() || !frontbackmap.IsValid() || !energymap.IsValid())
 	{
 		std::cerr<<"Bad maps at GenerateDeadChannelMap(). Exiting."<<std::endl;
 		return;
 	}
 
-	const int nchannels = 544;
+	const int nchannels = 640;
 	const int updown_list[8] = {1, 0, 3, 2, 5, 4, 7, 6}; //matches index -> index of up/down pair for SX3 fronts
 
 	std::ofstream output(deadname);
@@ -33,7 +31,6 @@ void GenerateDeadChannelMap(const std::string& zoffset, const std::string& backm
 	for(int i=0; i<nchannels; i++)
 	{
 		auto channel = cmap.FindChannel(i);
-		auto zero = zmap.FindOffset(i);
 		auto backs = backmap.FindParameters(i);
 		auto updowns = updownmap.FindParameters(i);
 		auto frontbacks = frontbackmap.FindParameters(i);
@@ -45,14 +42,13 @@ void GenerateDeadChannelMap(const std::string& zoffset, const std::string& backm
 			continue;
 		}
 
-		if(channel->second.detectorComponent == "FRONT" && channel->second.detectorDirection == "UP" &&
-			zero != zmap.End() && updowns != updownmap.End() && frontbacks != frontbackmap.End())
+		if(channel->second.detectorComponent == "FRONTUP" && updowns != updownmap.End() && frontbacks != frontbackmap.End())
 		{
 			dead_flags[i] = false;
 			ChannelData downdata;
 			downdata = channel->second;
-			downdata.channel = updown_list[channel->second.channel];
-			downdata.detectorDirection = "DOWN";
+			downdata.localChannel = updown_list[channel->second.localChannel];
+			downdata.detectorComponent = "FRONTDOWN";
 			int down_gchan = cmap.InverseFindChannel(downdata);
 			if(down_gchan == -1)
 			{
@@ -60,12 +56,16 @@ void GenerateDeadChannelMap(const std::string& zoffset, const std::string& backm
 			}
 			dead_flags[down_gchan] = false;
 		}
-		else if((channel->second.detectorComponent == "BACK" || channel->second.detectorComponent == "WEDGE") && zero != zmap.End() 
+		else if((channel->second.detectorComponent == "BACK" || channel->second.detectorComponent == "WEDGE")
 				&& backs != backmap.End() && energy != energymap.End())
 		{
 			dead_flags[i] = false;
 		}
-		else if(channel->second.detectorComponent == "RING" && zero != zmap.End() && frontbacks != frontbackmap.End() && energy != energymap.End())
+		else if(channel->second.detectorComponent == "RING" && frontbacks != frontbackmap.End() && energy != energymap.End())
+		{
+			dead_flags[i] = false;
+		}
+		else if(channel->second.detectorComponent == "FRONT" && energy != energymap.End()) //Barcelonas
 		{
 			dead_flags[i] = false;
 		}
@@ -77,7 +77,7 @@ void GenerateDeadChannelMap(const std::string& zoffset, const std::string& backm
 		{
 			auto channel = cmap.FindChannel(i);
 			output<<i<<" "<<channel->second.detectorType<<" "<<channel->second.detectorID<<" "<<channel->second.detectorComponent<<" ";
-			output<<channel->second.detectorDirection<<" "<<channel->second.channel<<std::endl;
+			output<<" "<<channel->second.localChannel<<std::endl;
 		}
 	}
 	output.close();

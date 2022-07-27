@@ -11,33 +11,39 @@
 
 #include <vector>
 
-struct SiliconHit
+
+struct DetectorHit
 {
-	int global_chan = -1;
-	int local_chan = -1;
-	double energy = -1;
-	double time = -1;
+	int globalChannel;
+	double energy;
+	double timestamp;
 };
 
-struct SX3Data
+struct FQQQDetector
 {
-	std::vector<SiliconHit> fronts_up;
-	std::vector<SiliconHit> fronts_down;
-	std::vector<SiliconHit> backs;
+	std::vector<DetectorHit> rings;
+	std::vector<DetectorHit> wedges;
 };
 
-struct QQQData
+struct BarrelDetector
 {
-	std::vector<SiliconHit> rings;
-	std::vector<SiliconHit> wedges;
+	std::vector<DetectorHit> frontsUp;
+	std::vector<DetectorHit> frontsDown;
+	std::vector<DetectorHit> backs;
 };
 
-struct AnasenEvent
+struct BarcDetector
 {
-	SX3Data barrel1[12];
-	SX3Data barrel2[12];
-	QQQData fqqq[4];
-	QQQData bqqq[4];
+	std::vector<DetectorHit> fronts;
+	std::vector<DetectorHit> backs;
+};
+
+struct CoincEvent
+{
+	BarrelDetector barrel[12];
+	FQQQDetector fqqq[4];
+	BarcDetector barcUp[6];
+	BarcDetector barcDown[6];
 };
 
 struct GraphData
@@ -72,12 +78,19 @@ struct CalibratedQQQHit
 	int detector_index = -1;
 };
 
+struct CalibratedBarcHit
+{
+	double front_energy = -1.0;
+	int front_gchan = -1;
+	int detector_index = -1;
+};
+
 struct CalibratedEvent
 {
-	std::vector<CalibratedSX3Hit> barrel1;
-	std::vector<CalibratedSX3Hit> barrel2;
+	std::vector<CalibratedSX3Hit> barrel;
 	std::vector<CalibratedQQQHit> fqqq;
-	std::vector<CalibratedQQQHit> bqqq;
+	std::vector<CalibratedBarcHit> barcUp;
+	std::vector<CalibratedBarcHit> barcDown;
 };
 
 #endif

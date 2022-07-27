@@ -16,14 +16,13 @@ class MapChecker
 public:
 	MapChecker(const std::string& channelfile);
 	~MapChecker();
-	void CheckZOffset(const std::string& filename);
 	void CheckBackGainMatch(const std::string& filename);
 	void CheckUpDownGainMatch(const std::string& filename);
 	void CheckFrontBackGainMatch(const std::string& filename);
 
 private:
 	ChannelMap cmap;
-	const int nchannels = 544;
+	const int nchannels = 640;
 };
 
 #endif
