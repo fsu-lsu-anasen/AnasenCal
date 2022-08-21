@@ -10,7 +10,7 @@
 #include "ParameterMap.h"
 
 MapChecker::MapChecker(const std::string& channelfile) :
-	cmap(channelfile)
+	m_channelMap(channelfile)
 {
 }
 
@@ -20,7 +20,7 @@ MapChecker::~MapChecker() {}
 void MapChecker::CheckBackGainMatch(const std::string& filename)
 {
 	std::cout<<"Loading map "<<filename<<"..."<<std::endl;
-	ParameterMap pmap(filename);
+	ParameterMap paramMap(filename);
 
 	//Counters
 	int backs=0, wedges=0;
@@ -28,11 +28,11 @@ void MapChecker::CheckBackGainMatch(const std::string& filename)
 
 	std::vector<int> missing_channels;
 	std::cout<<"Checking channels..."<<std::endl;
-	for(int i=0; i<nchannels; i++)
+	for(int i=0; i<s_nchannels; i++)
 	{
-		auto channel = cmap.FindChannel(i);
-		auto offset = pmap.FindParameters(i);
-		if(offset == pmap.End())
+		auto channel = m_channelMap.FindChannel(i);
+		auto offset = paramMap.FindParameters(i);
+		if(offset == paramMap.End())
 		{
 			if(channel->second.detectorComponent == "BACK")
 			{
@@ -61,7 +61,7 @@ void MapChecker::CheckBackGainMatch(const std::string& filename)
 void MapChecker::CheckUpDownGainMatch(const std::string& filename)
 {
 	std::cout<<"Loading map "<<filename<<"..."<<std::endl;
-	ParameterMap pmap(filename);
+	ParameterMap paramMap(filename);
 
 	//Counters
 	int frontups=0;
@@ -69,11 +69,11 @@ void MapChecker::CheckUpDownGainMatch(const std::string& filename)
 
 	std::vector<int> missing_channels;
 	std::cout<<"Checking channels..."<<std::endl;
-	for(int i=0; i<nchannels; i++)
+	for(int i=0; i<s_nchannels; i++)
 	{
-		auto channel = cmap.FindChannel(i);
-		auto offset = pmap.FindParameters(i);
-		if(offset == pmap.End())
+		auto channel = m_channelMap.FindChannel(i);
+		auto offset = paramMap.FindParameters(i);
+		if(offset == paramMap.End())
 		{
 			if(channel->second.detectorComponent == "FRONTUP")
 			{
@@ -95,7 +95,7 @@ void MapChecker::CheckUpDownGainMatch(const std::string& filename)
 void MapChecker::CheckFrontBackGainMatch(const std::string& filename)
 {
 	std::cout<<"Loading map "<<filename<<"..."<<std::endl;
-	ParameterMap pmap(filename);
+	ParameterMap paramMap(filename);
 
 	//Counters
 	int frontups=0, rings=0;
@@ -103,11 +103,11 @@ void MapChecker::CheckFrontBackGainMatch(const std::string& filename)
 
 	std::vector<int> missing_channels;
 	std::cout<<"Checking channels..."<<std::endl;
-	for(int i=0; i<nchannels; i++)
+	for(int i=0; i<s_nchannels; i++)
 	{
-		auto channel = cmap.FindChannel(i);
-		auto offset = pmap.FindParameters(i);
-		if(offset == pmap.End())
+		auto channel = m_channelMap.FindChannel(i);
+		auto offset = paramMap.FindParameters(i);
+		if(offset == paramMap.End())
 		{
 			if(channel->second.detectorComponent == "FRONTUP")
 			{

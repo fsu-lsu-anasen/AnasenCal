@@ -20,8 +20,8 @@
 #include "DataStructs.h"
 
 
-class EnergyCalibrator {
-  
+class EnergyCalibrator
+{
 public:
 	EnergyCalibrator(const std::string& channelfile, const std::string& backmatch, const std::string& updownmatch, const std::string& frontbackmatch);
 	~EnergyCalibrator();
@@ -32,16 +32,16 @@ private:
 	void FillHistogram(THashTable* table, const std::string& name, const std::string& title, int bins, double minx, double maxx, double value);
 	GraphData GetPoints(THashTable* table, int gchan, const std::string& name);
 
-	TSpectrum spec;
+	TSpectrum m_spectrum;
 
-	ChannelMap cmap;
-	ParameterMap bmap, udmap, fbmap;
+	ChannelMap m_channelMap;
+	ParameterMap m_backGainMap, m_sx3UpDownGainMap, m_frontBackGainMap;
 
-	double sigma, threshold;
-	const int nchannels = 640;
+	std::vector<double> m_energyValues = {5.155, 5.486, 5.805}; //Will need modified for each experiment.
 
-	std::vector<double> energyValues = {5.155, 5.486, 5.805}; //Will need modified for each experiment.
-
+	static constexpr double s_sigma = 1.0;
+	static constexpr double s_threshold = 0.4;
+	static constexpr int s_nchannels = 640;
 };
 
 #endif

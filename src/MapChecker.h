@@ -21,8 +21,8 @@ public:
 	void CheckFrontBackGainMatch(const std::string& filename);
 
 private:
-	ChannelMap cmap;
-	const int nchannels = 640;
+	ChannelMap m_channelMap;
+	static constexpr int s_nchannels = 640;
 };
 
 #endif

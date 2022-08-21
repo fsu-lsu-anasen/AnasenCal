@@ -36,20 +36,20 @@ struct ChannelData
 class ChannelMap
 {
 public:
-	typedef std::unordered_map<int, ChannelData>::iterator Iterator;
+	using Iterator = std::unordered_map<int, ChannelData>::iterator;
 
 	ChannelMap(const std::string& filename);
 	~ChannelMap();
-	inline const bool IsValid() const { return valid_flag; }
-	inline Iterator FindChannel(int gchan) { return cmap.find(gchan); }
-	inline Iterator End() { return cmap.end(); }
+	const bool IsValid() const { return m_isValid; }
+	Iterator FindChannel(int gchan) { return m_cmap.find(gchan); }
+	Iterator End() { return m_cmap.end(); }
 	int InverseFindChannel(const ChannelData& data);
 
 private:
 	void FillMap(const std::string& filename);
-	std::unordered_map<int, ChannelData> cmap;
-	bool valid_flag;
-	std::string name;
+	std::unordered_map<int, ChannelData> m_cmap;
+	bool m_isValid;
+	std::string m_name;
 };
 
 #endif

@@ -34,12 +34,12 @@ private:
 	GraphData GetPoints(THashTable* table, const std::string& name);
 	CalParams MakeGraph(THashTable* table, int gchan, const GraphData& data);
 	
-	ChannelMap cmap;
-	TSpectrum spec;
-	const int max_chan=640; //May need modified if ANASEN is modified
-	const double sigma = 1.0, threshold=0.4; //May need modified for each experiment
+	ChannelMap m_channelMap;
+	TSpectrum m_spectrum;
 
-	const int updown_list[8] = {1, 0, 3, 2, 5, 4, 7, 6}; //matches index -> index of up/down pair for SX3 fronts
+	static constexpr int s_nchannels=640; //May need modified if ANASEN is modified
+	static constexpr double s_sigma = 1.0, s_threshold=0.4; //May need modified for each experiment
+	static constexpr int s_sx3UpDownMatch[8] = {1, 0, 3, 2, 5, 4, 7, 6}; //matches index -> index of up/down pair for SX3 fronts
 };
 
 #endif

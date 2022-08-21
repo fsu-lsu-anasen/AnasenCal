@@ -26,7 +26,7 @@ bool SortGainData(const double i, const double j)
 }
 
 GainMatcher::GainMatcher(const std::string& channelfile) :
-	cmap(channelfile)
+	m_channelMap(channelfile)
 {
 }
 
@@ -84,7 +84,7 @@ GraphData GainMatcher::GetPoints(THashTable* table, const std::string& name)
 		return data;
 	}
 
-	int npeaks = spec.Search(histo, sigma, "nobackground", threshold);
+	int npeaks = m_spectrum.Search(histo, s_sigma, "nobackground", s_threshold);
 	if(npeaks == 0)
 	{
 		std::cerr<<"No peaks found in spectrum "<<name<<" returning empty data."<<std::endl;
@@ -98,7 +98,7 @@ GraphData GainMatcher::GetPoints(THashTable* table, const std::string& name)
 
 	for(int i=0; i<npeaks; i++)
 	{
-		double x = spec.GetPositionX()[i];
+		double x = m_spectrum.GetPositionX()[i];
 		data.xvals.push_back(x);
 	}
 
@@ -132,7 +132,7 @@ CalParams GainMatcher::MakeGraph(THashTable* table, int gchan, const GraphData& 
 */
 void GainMatcher::MatchBacks(const std::string& inputname, const std::string& graphname, const std::string& outputname, int sx3match, int qqqmatch)
 {
-	if(!cmap.IsValid())
+	if(!m_channelMap.IsValid())
 	{
 		std::cerr<<"Bad map files at GainMatcher::Run! Exiting."<<std::endl;
 		return;
@@ -154,15 +154,15 @@ void GainMatcher::MatchBacks(const std::string& inputname, const std::string& gr
 
 	std::vector<GraphData> gain_data;
 	std::vector<int> match_channel; //List of channels which are to be matched against
-	gain_data.resize(max_chan);
-	match_channel.resize(max_chan);
+	gain_data.resize(s_nchannels);
+	match_channel.resize(s_nchannels);
 
 	ChannelData match;
 	//Create a quick lookup of global channel to match against
-	for(int i=0; i<max_chan; i++)
+	for(int i=0; i<s_nchannels; i++)
 	{
-		auto channel = cmap.FindChannel(i);
-		if(channel == cmap.End() || channel->second.detectorType == "BARCUPSTREAM" || channel->second.detectorType == "BARCDOWNSTREAM" || 
+		auto channel = m_channelMap.FindChannel(i);
+		if(channel == m_channelMap.End() || channel->second.detectorType == "BARCUPSTREAM" || channel->second.detectorType == "BARCDOWNSTREAM" || 
 		   channel->second.detectorComponent == "FRONTUP" || channel->second.detectorComponent == "FRONTDOWN" || channel->second.detectorComponent == "RING")
 			continue;
 
@@ -174,7 +174,7 @@ void GainMatcher::MatchBacks(const std::string& inputname, const std::string& gr
 		else
 			std::cerr<<"weird channel at GainMatcher::MatchBacks()"<<std::endl;
 
-		match_channel[i] = cmap.InverseFindChannel(match);
+		match_channel[i] = m_channelMap.InverseFindChannel(match);
 		if(match_channel[i] == -1)
 			std::cerr<<"Found a zero to match against for GainMatcher::MatchBacks() gchan: "<<i<<" trying to match to detector channel: "<<match.localChannel<<std::endl;
 	}
@@ -217,10 +217,10 @@ void GainMatcher::MatchBacks(const std::string& inputname, const std::string& gr
 	}
 
 	//Find the peaks from the energy spectra and store in an array.
-	for(int i=0; i<max_chan; i++)
+	for(int i=0; i<s_nchannels; i++)
 	{
-		auto channel = cmap.FindChannel(i);
-		if(channel == cmap.End() || channel->second.detectorType == "BARCUPSTREAM" || channel->second.detectorType == "BARCDOWNSTREAM" || 
+		auto channel = m_channelMap.FindChannel(i);
+		if(channel == m_channelMap.End() || channel->second.detectorType == "BARCUPSTREAM" || channel->second.detectorType == "BARCDOWNSTREAM" || 
 		   channel->second.detectorComponent == "FRONTUP" || channel->second.detectorComponent == "FRONTDOWN" || channel->second.detectorComponent == "RING")
 			continue;
 		name = "channel_"+std::to_string(i);
@@ -229,7 +229,7 @@ void GainMatcher::MatchBacks(const std::string& inputname, const std::string& gr
 
 	//Assign the data to match against, generate the graph, and obtain the fit parameters
 	CalParams params;
-	for(int i=0; i<max_chan; i++)
+	for(int i=0; i<s_nchannels; i++)
 	{
 		if(gain_data[i].xvals.size() == 0)
 			continue;
@@ -324,7 +324,7 @@ void GainMatcher::MatchBacks(const std::string& inputname, const std::string& gr
 */
 void GainMatcher::MatchSX3UpDown(const std::string& inputname, const std::string& graphname, const std::string& outputname, const std::string& backmatchname)
 {
-	if(!cmap.IsValid())
+	if(!m_channelMap.IsValid())
 	{
 		std::cerr<<"Bad map files at GainMatcher::Run! Exiting."<<std::endl;
 		return;
@@ -352,7 +352,7 @@ void GainMatcher::MatchSX3UpDown(const std::string& inputname, const std::string
 	std::ofstream output(outputname);
 
 	std::vector<GraphData> gain_data;
-	gain_data.resize(max_chan);
+	gain_data.resize(s_nchannels);
 
 	int nentries = intree->GetEntries();
 	int count=0, flush_count=0, flush_val=nentries*0.01;
@@ -387,11 +387,11 @@ void GainMatcher::MatchSX3UpDown(const std::string& inputname, const std::string
 						continue;
 					for(auto& fuphit : event->barrel[j].frontsUp)
 					{
-						auto fup_channel = cmap.FindChannel(fuphit.globalChannel);
+						auto fup_channel = m_channelMap.FindChannel(fuphit.globalChannel);
 						for(auto& fdownhit : event->barrel[j].frontsDown)
 						{
-							auto fdown_channel = cmap.FindChannel(fdownhit.globalChannel);
-							if(fup_channel->second.localChannel != updown_list[fdown_channel->second.localChannel])
+							auto fdown_channel = m_channelMap.FindChannel(fdownhit.globalChannel);
+							if(fup_channel->second.localChannel != s_sx3UpDownMatch[fdown_channel->second.localChannel])
 							{
 								continue;
 							}
@@ -418,7 +418,7 @@ void GainMatcher::MatchSX3UpDown(const std::string& inputname, const std::string
 
 	CalParams params;
 	//Fit the data and write the parameters
-	for(int i=0; i<max_chan; i++)
+	for(int i=0; i<s_nchannels; i++)
 	{
 		if(gain_data[i].xvals.size() < 50 || gain_data[i].yvals.size() < 50)
 			continue;
@@ -462,11 +462,11 @@ void GainMatcher::MatchSX3UpDown(const std::string& inputname, const std::string
 						continue;
 					for(auto& fuphit : event->barrel[j].frontsUp)
 					{
-						auto fup_channel = cmap.FindChannel(fuphit.globalChannel);
+						auto fup_channel = m_channelMap.FindChannel(fuphit.globalChannel);
 						for(auto& fdownhit : event->barrel[j].frontsDown)
 						{
-							auto fdown_channel = cmap.FindChannel(fdownhit.globalChannel);
-							if(fup_channel->second.localChannel != updown_list[fdown_channel->second.localChannel])
+							auto fdown_channel = m_channelMap.FindChannel(fdownhit.globalChannel);
+							if(fup_channel->second.localChannel != s_sx3UpDownMatch[fdown_channel->second.localChannel])
 							{
 								continue;
 							}
@@ -512,7 +512,7 @@ void GainMatcher::MatchSX3UpDown(const std::string& inputname, const std::string
 */
 void GainMatcher::MatchFrontBack(const std::string& inputname, const std::string& graphname, const std::string& outputname, const std::string& backmatchname, const std::string& updownmatchname)
 {
-	if(!cmap.IsValid())
+	if(!m_channelMap.IsValid())
 	{
 		std::cerr<<"Bad map files at GainMatcher::Run! Exiting."<<std::endl;
 		return;
@@ -541,7 +541,7 @@ void GainMatcher::MatchFrontBack(const std::string& inputname, const std::string
 	std::ofstream output(outputname);
 
 	std::vector<GraphData> gain_data;
-	gain_data.resize(max_chan);
+	gain_data.resize(s_nchannels);
 
 	int nentries = intree->GetEntries();
 	int count=0, flush_count=0, flush_val=nentries*0.01;
@@ -571,11 +571,11 @@ void GainMatcher::MatchFrontBack(const std::string& inputname, const std::string
 				{
 					for(auto& fuphit : event->barrel[j].frontsUp)
 					{
-						auto fup_channel = cmap.FindChannel(fuphit.globalChannel);
+						auto fup_channel = m_channelMap.FindChannel(fuphit.globalChannel);
 						for(auto& fdownhit : event->barrel[j].frontsDown)
 						{
-							auto fdown_channel = cmap.FindChannel(fdownhit.globalChannel);
-							if(fup_channel->second.localChannel != updown_list[fdown_channel->second.localChannel])
+							auto fdown_channel = m_channelMap.FindChannel(fdownhit.globalChannel);
+							if(fup_channel->second.localChannel != s_sx3UpDownMatch[fdown_channel->second.localChannel])
 								continue;
 							auto backgains = backmap.FindParameters(backhit.globalChannel);
 							if(backgains == backmap.End())
@@ -624,7 +624,7 @@ void GainMatcher::MatchFrontBack(const std::string& inputname, const std::string
 
 	//Generate graphs, obtain and write fit data
 	CalParams params;
-	for(int i=0; i<max_chan; i++)
+	for(int i=0; i<s_nchannels; i++)
 	{
 		if(gain_data[i].xvals.size() < 10|| gain_data[i].yvals.size() < 10)
 			continue;
@@ -665,11 +665,11 @@ void GainMatcher::MatchFrontBack(const std::string& inputname, const std::string
 				{
 					for(auto& fuphit : event->barrel[j].frontsUp)
 					{
-						auto fup_channel = cmap.FindChannel(fuphit.globalChannel);
+						auto fup_channel = m_channelMap.FindChannel(fuphit.globalChannel);
 						for(auto& fdownhit : event->barrel[j].frontsDown)
 						{
-							auto fdown_channel = cmap.FindChannel(fdownhit.globalChannel);
-							if(fup_channel->second.localChannel != updown_list[fdown_channel->second.localChannel])
+							auto fdown_channel = m_channelMap.FindChannel(fdownhit.globalChannel);
+							if(fup_channel->second.localChannel != s_sx3UpDownMatch[fdown_channel->second.localChannel])
 								continue;
 							auto backgains = backmap.FindParameters(backhit.globalChannel);
 							if(backgains == backmap.End())

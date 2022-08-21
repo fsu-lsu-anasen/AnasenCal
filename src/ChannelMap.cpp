@@ -15,7 +15,7 @@
 #include <iostream>
 
 ChannelMap::ChannelMap(const std::string& filename) :
-	valid_flag(false), name(filename)
+	m_isValid(false), m_name(filename)
 {
 	FillMap(filename);
 }
@@ -27,7 +27,7 @@ void ChannelMap::FillMap(const std::string& filename)
 	std::ifstream input(filename);
 	if(!input.is_open())
 	{
-		valid_flag=false;
+		m_isValid=false;
 		std::cerr<<"Bad file at ChannelMap::FillMap!"<<std::endl;
 		return;
 	}
@@ -37,15 +37,15 @@ void ChannelMap::FillMap(const std::string& filename)
 	while(input>>gchan)
 	{
 		input>>data.detectorType>>data.detectorID>>data.detectorComponent>>data.localChannel;
-		cmap[gchan] = data;
+		m_cmap[gchan] = data;
 	}
 
-	valid_flag = true;
+	m_isValid = true;
 }
 
 int ChannelMap::InverseFindChannel(const ChannelData& data)
 {
-	for(auto& channel : cmap)
+	for(auto& channel : m_cmap)
 	{
 		ChannelData& this_data = channel.second;
 		if(this_data == data)

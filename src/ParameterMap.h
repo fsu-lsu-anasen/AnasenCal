@@ -18,18 +18,18 @@
 class ParameterMap
 {
 public:
-	typedef std::unordered_map<int, CalParams>::iterator Iter; 
+	using Iter = std::unordered_map<int, CalParams>::iterator;
 	ParameterMap(const std::string& filename);
 	~ParameterMap();
-	inline Iter FindParameters(int gchan) { return map.find(gchan); }
-	inline Iter End() { return map.end(); }
-	inline const bool IsValid() const { return valid_flag; }
+	Iter FindParameters(int gchan) { return m_map.find(gchan); }
+	Iter End() { return m_map.end(); }
+	const bool IsValid() const { return m_isValid; }
 
 private:
 	void FillMap(const std::string& filename);
 	
-	bool valid_flag;
-	std::unordered_map<int, CalParams> map;
+	bool m_isValid;
+	std::unordered_map<int, CalParams> m_map;
 };
 
 #endif

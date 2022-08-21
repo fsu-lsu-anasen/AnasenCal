@@ -27,7 +27,7 @@ bool SortEnergyData(const double i, const double j)
 	of maximum peak height. These may need adjusted for each experiment.
 */
 EnergyCalibrator::EnergyCalibrator(const std::string& channelfile, const std::string& backmatch, const std::string& updownmatch, const std::string& frontbackmatch) :
-	cmap(channelfile), bmap(backmatch), udmap(updownmatch), fbmap(frontbackmatch), sigma(1.0), threshold(0.4)
+	m_channelMap(channelfile), m_backGainMap(backmatch), m_sx3UpDownGainMap(updownmatch), m_frontBackGainMap(frontbackmatch)
 {
 }
 
@@ -65,8 +65,8 @@ GraphData EnergyCalibrator::GetPoints(THashTable* table, int gchan, const std::s
 		return data;
 	}
 
-	int npeaks = spec.Search(histo, sigma, "nobackground", threshold);
-	int nepeaks = energyValues.size();
+	int npeaks = m_spectrum.Search(histo, s_sigma, "nobackground", s_threshold);
+	int nepeaks = m_energyValues.size();
 	if(npeaks != nepeaks)
 	{
 		std::cerr<<"Npeaks not equal to "<<nepeaks<<" in spectrum "<<name<<" returning empty data."<<std::endl;
@@ -75,13 +75,13 @@ GraphData EnergyCalibrator::GetPoints(THashTable* table, int gchan, const std::s
 
 	for(int i=0; i<npeaks; i++)
 	{
-		double x = spec.GetPositionX()[i];
+		double x = m_spectrum.GetPositionX()[i];
 		data.xvals.push_back(x);
 	}
 
 	std::sort(data.xvals.begin(), data.xvals.end(), SortEnergyData);
 
-	data.yvals = energyValues;
+	data.yvals = m_energyValues;
 
 	return data;
 }
@@ -168,8 +168,8 @@ void EnergyCalibrator::Run(const std::string& inputname, const std::string& plot
 			for(auto& hit : event->barrel[j].backs)
 			{
 				name = "channel_"+std::to_string(hit.globalChannel);
-				auto gains = bmap.FindParameters(hit.globalChannel);
-				if(gains == bmap.End())
+				auto gains = m_backGainMap.FindParameters(hit.globalChannel);
+				if(gains == m_backGainMap.End())
 					continue;
 				cal_energy = gains->second.slope*(hit.energy) + gains->second.intercept;
 				FillHistogram(histo_table, name, name, 925,600.0,8000.0, cal_energy);
@@ -181,8 +181,8 @@ void EnergyCalibrator::Run(const std::string& inputname, const std::string& plot
 			for(auto& hit : event->fqqq[j].rings)
 			{
 				name = "channel_"+std::to_string(hit.globalChannel);
-				auto gains = fbmap.FindParameters(hit.globalChannel);
-				if(gains == fbmap.End())
+				auto gains = m_frontBackGainMap.FindParameters(hit.globalChannel);
+				if(gains == m_frontBackGainMap.End())
 					continue;
 				cal_energy = gains->second.slope*(hit.energy) + gains->second.intercept;
 				FillHistogram(histo_table, name, name, 925,600.0,8000.0, cal_energy);
@@ -190,8 +190,8 @@ void EnergyCalibrator::Run(const std::string& inputname, const std::string& plot
 			for(auto& hit : event->fqqq[j].wedges)
 			{
 				name = "channel_"+std::to_string(hit.globalChannel);
-				auto gains = bmap.FindParameters(hit.globalChannel);
-				if(gains == bmap.End())
+				auto gains = m_backGainMap.FindParameters(hit.globalChannel);
+				if(gains == m_backGainMap.End())
 					continue;
 				cal_energy = gains->second.slope*(hit.energy) + gains->second.intercept;
 				FillHistogram(histo_table, name, name, 925,600.0,8000.0, cal_energy);
@@ -216,7 +216,7 @@ void EnergyCalibrator::Run(const std::string& inputname, const std::string& plot
 	//Generate graphs, obtain fit parameters
 	GraphData data;
 	CalParams parameters;
-	for(int i=0; i<nchannels; i++)
+	for(int i=0; i<s_nchannels; i++)
 	{
 		name = "channel_"+std::to_string(i);
 		data = GetPoints(histo_table, i, name);
@@ -259,9 +259,9 @@ void EnergyCalibrator::Run(const std::string& inputname, const std::string& plot
 			for(auto& hit : event->barrel[j].backs)
 			{
 				name = "channel_"+std::to_string(hit.globalChannel)+"_calibrated";
-				auto gains = bmap.FindParameters(hit.globalChannel);
+				auto gains = m_backGainMap.FindParameters(hit.globalChannel);
 				auto ecal = energymap.FindParameters(hit.globalChannel);
-				if(gains == bmap.End() || ecal == energymap.End())
+				if(gains == m_backGainMap.End() || ecal == energymap.End())
 					continue;
 				cal_energy = ecal->second.slope*(gains->second.slope*(hit.energy) + gains->second.intercept) + ecal->second.intercept;
 				FillHistogram(histo_table, name, name, 1000.0,0.0,10.0, cal_energy);
@@ -270,9 +270,9 @@ void EnergyCalibrator::Run(const std::string& inputname, const std::string& plot
 			for(auto& hit : event->barrel[j].backs)
 			{
 				name = "channel_"+std::to_string(hit.globalChannel)+"_calibrated";
-				auto gains = bmap.FindParameters(hit.globalChannel);
+				auto gains = m_backGainMap.FindParameters(hit.globalChannel);
 				auto ecal = energymap.FindParameters(hit.globalChannel);
-				if(gains == bmap.End() || ecal == energymap.End())
+				if(gains == m_backGainMap.End() || ecal == energymap.End())
 					continue;
 				cal_energy = ecal->second.slope*(gains->second.slope*(hit.energy) + gains->second.intercept) + ecal->second.intercept;
 				FillHistogram(histo_table, name, name, 1000.0,0.0,10.0, cal_energy);
@@ -284,9 +284,9 @@ void EnergyCalibrator::Run(const std::string& inputname, const std::string& plot
 			for(auto& hit : event->fqqq[j].rings)
 			{
 				name = "channel_"+std::to_string(hit.globalChannel)+"_calibrated";
-				auto gains = fbmap.FindParameters(hit.globalChannel);
+				auto gains = m_frontBackGainMap.FindParameters(hit.globalChannel);
 				auto ecal = energymap.FindParameters(hit.globalChannel);
-				if(gains == fbmap.End() || ecal == energymap.End())
+				if(gains == m_frontBackGainMap.End() || ecal == energymap.End())
 					continue;
 				cal_energy = ecal->second.slope*(gains->second.slope*(hit.energy) + gains->second.intercept) + ecal->second.intercept;
 				FillHistogram(histo_table, name, name, 1000.0,0.0,10.0, cal_energy);
@@ -294,9 +294,9 @@ void EnergyCalibrator::Run(const std::string& inputname, const std::string& plot
 			for(auto& hit : event->fqqq[j].wedges)
 			{
 				name = "channel_"+std::to_string(hit.globalChannel)+"_calibrated";
-				auto gains = bmap.FindParameters(hit.globalChannel);
+				auto gains = m_backGainMap.FindParameters(hit.globalChannel);
 				auto ecal = energymap.FindParameters(hit.globalChannel);
-				if(gains == bmap.End() || ecal == energymap.End())
+				if(gains == m_backGainMap.End() || ecal == energymap.End())
 					continue;
 				cal_energy = ecal->second.slope*(gains->second.slope*(hit.energy) + gains->second.intercept) + ecal->second.intercept;
 				FillHistogram(histo_table, name, name, 1000.0,0.0,10.0, cal_energy);

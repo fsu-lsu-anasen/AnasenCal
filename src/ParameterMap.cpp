@@ -12,7 +12,7 @@
 #include <fstream>
 
 ParameterMap::ParameterMap(const std::string& filename) :
-	valid_flag(false)
+	m_isValid(false)
 {
 	FillMap(filename);
 }
@@ -24,7 +24,7 @@ void ParameterMap::FillMap(const std::string& filename)
 	std::ifstream input(filename);
 	if(!input.is_open())
 	{
-		valid_flag = false;
+		m_isValid = false;
 		return;
 	}
 
@@ -33,9 +33,9 @@ void ParameterMap::FillMap(const std::string& filename)
 	while(input>>gchan)
 	{
 		input>>params.intercept>>params.slope;
-		map[gchan] = params;
+		m_map[gchan] = params;
 	}
 	input.close();
 
-	valid_flag = true;
+	m_isValid = true;
 }

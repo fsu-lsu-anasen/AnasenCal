@@ -22,9 +22,9 @@ public:
 	void Run(const std::string& inputname, const std::string& outputname);
 
 private:
-	ChannelMap channel_map;
-	ParameterMap back_map, updown_map, frontback_map, energy_map;
-	const int updown_list[8] = {1, 0, 3, 2, 5, 4, 7, 6}; //matches index -> index of up/down pair for SX3 fronts
+	ChannelMap m_channelMap;
+	ParameterMap m_backGainMap, m_sx3UpDownGainMap, m_frontBackGainMap, m_energyCalMap;
+	static constexpr int s_sx3UpDownMatch[8] = {1, 0, 3, 2, 5, 4, 7, 6}; //matches index -> index of up/down pair for SX3 fronts
 };
 
 #endif
