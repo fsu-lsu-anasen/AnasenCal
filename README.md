@@ -1,5 +1,14 @@
 # ANASEN Calibration
-ANASEN Calibration is a package capable of performing silicon detector zero-offset, gain-matching, and energy calibration for detectors in the ANASEN array. It also performs front-back hit matching and provides a simple and (hopefully) inuitive data structure. AnasenCal requires ROOT (the CERN data analysis framework) as a dependency. To build AnasenCal fork or clone this repository and use the given Makefile, running the command `make` from within the AnasenCal directory. To clean a build run `make clean`.
+ANASEN Calibration is a package capable of performing silicon detector zero-offset, gain-matching, and energy calibration for detectors in the ANASEN array. It also performs front-back hit matching and provides a simple and (hopefully) inuitive data structure. AnasenCal requires ROOT (the CERN data analysis framework) as a dependency. To AnasenCal is built using CMake.
+
+## Installation
+To build AnasenCal simply run the following commands from the repository directory (for a UNIX machine):
+- `mkdir build`
+- `cd build`
+- `cmake ..`
+- `make`
+
+This will build the release version. If the debug version is necessary, simply swap the command `cmake ..` with `cmake -DCMAKE_BUILD_TYPE=Debug ..`
 
 ## Program Options
 Different stages of the analysis are run by calling different options at the commandline. The general execution format is:
