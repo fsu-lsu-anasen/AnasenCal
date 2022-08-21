@@ -93,4 +93,6 @@ struct CalibratedEvent
 	std::vector<CalibratedBarcHit> barcDown;
 };
 
+
+bool EnforceDictionaryLinked();
 #endif
