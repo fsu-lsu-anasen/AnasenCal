@@ -1,14 +1,8 @@
-*.o
-*.so
-*.dylib
-*.txt
-*.swp
-*.pcm
-*.cxx
 *.sublime-project
 *.sublime-workspace
-bin/anasencal
+bin/
+.vscode/
+build/
+lib/
 
 !.gitignore
-!input.txt
-!etc/AnasenChannelMap_fixedOrientation.txt
