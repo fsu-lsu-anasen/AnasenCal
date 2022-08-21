@@ -20,6 +20,12 @@ target_sources(AnasenCal PRIVATE
     MapChecker.cpp
     ParameterMap.h
     ParameterMap.cpp
+    Geometry/SX3Detector.h
+    Geometry/SX3Detector.cpp
+    Geometry/QQQDetector.h
+    Geometry/QQQDetector.cpp
+    Geometry/BarcelonaDetector.h
+    Geometry/BarcelonaDetector.cpp
 )
 
 target_link_libraries(AnasenCal PUBLIC CalDict ${ROOT_LIBRARIES})
