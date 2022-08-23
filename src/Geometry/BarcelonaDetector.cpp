@@ -15,7 +15,7 @@
 */
 BarcelonaDetector::BarcelonaDetector(double length, double width, double centerPhi, double centerZ, double centerRho) :
     m_centerRho(centerRho), m_centerPhi(centerPhi), m_centerZ(centerZ), m_stripWidth(width), m_totalLength(length),
-    m_norm(1.0, 0.0, 0.0)
+    m_norm(1.0, 0.0, 0.0), m_uniformFraction(0.0, 1.0)
 {
     m_stripLength = m_totalLength/s_nStrips;
 
@@ -59,13 +59,22 @@ void BarcelonaDetector::CalculateCorners()
     }
 }
 
-//TODO: implement rng
 ROOT::Math::XYZPoint BarcelonaDetector::GetHitCoordinates(int stripch)
 {
     //Calculate first in un-rotated det
-    double y = -m_stripWidth*0.5 + m_stripWidth*0.5; //Example. With rng randomize scaling on second term between 0 and 1.0
-    double z = -m_totalLength*0.5 + m_stripLength * (stripch + 0.5); //Example. With rng randomize scaling on second term between 0 and 1.0
-
+    double y, z;
+    if(m_isSmearing)
+    {
+        RandomGenerator& rng = RandomGenerator::GetInstance();
+        y = -m_stripWidth * 0.5 + m_stripWidth * m_uniformFraction(rng.GetGenerator());
+        z = -m_totalLength * 0.5 + m_stripLength * (stripch + m_uniformFraction(rng.GetGenerator()));
+    }
+    else
+    {
+        y = 0.0;
+        z = -m_totalLength*0.5 + m_stripLength * (stripch + 0.5);
+    }
+    
     ROOT::Math::XYZPoint coords(m_centerRho, y, z);
     return m_zRotation * coords;
 }

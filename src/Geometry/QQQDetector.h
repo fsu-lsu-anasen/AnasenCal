@@ -7,10 +7,11 @@
 #ifndef QQQDETECTOR_H
 #define QQQDETECTOR_H
 
+#include "RandomGenerator.h"
+
 #include <cmath>
 #include <vector>
 
-//#include "RandomGenerator.h"
 #include "Math/Point3D.h"
 #include "Math/Vector3D.h"
 #include "Math/RotationZ.h"
@@ -53,7 +54,7 @@ private:
 	ROOT::Math::XYZVector m_norm;
 	ROOT::Math::RotationZ m_zRotation;
 
-	//std::uniform_real_distribution<double> m_uniformFraction;
+	std::uniform_real_distribution<double> m_uniformFraction;
 	bool m_isSmearing;
 
 	static constexpr int s_nRings = 16;

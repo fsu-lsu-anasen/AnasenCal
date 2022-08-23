@@ -1,6 +1,8 @@
 #ifndef BARCELONA_DETECTOR_H
 #define BARCELONA_DETECTOR_H
 
+#include "RandomGenerator.h"
+
 #include <cmath>
 #include <vector>
 
@@ -41,6 +43,8 @@ private:
 
     ROOT::Math::RotationZ m_zRotation;
     ROOT::Math::XYZVector m_norm;
+
+	std::uniform_real_distribution<double> m_uniformFraction;
 
     static constexpr int s_nStrips = 32;
     static constexpr int s_nCorners = 4;

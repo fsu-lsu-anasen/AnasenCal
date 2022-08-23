@@ -19,7 +19,7 @@
 
 //TODO: Implement rng
 SX3Detector::SX3Detector(int ns, double len, double wid, double cphi, double cz, double crho) :
-	m_norm(1.0,0.0,0.0), /*m_uniformFraction(0.0, 1.0),*/ m_isSmearing(false)
+	m_norm(1.0,0.0,0.0), m_uniformFraction(0.0, 1.0), m_isSmearing(false)
 {
 
 	m_nStrips = ns;
@@ -99,10 +99,8 @@ ROOT::Math::XYZPoint SX3Detector::GetHitCoordinates(int front_stripch, double fr
 		return ROOT::Math::XYZPoint(0,0,0);
 
 	double y;
-	//TODO: Implement rng
 	if(m_isSmearing)
-		//y = -m_totalWidth/2.0 + (front_stripch + m_uniformFraction(Mask::RandomGenerator::GetInstance().GetGenerator()))*m_frontStripWidth;
-		y = -m_totalWidth/2.0 + (front_stripch+0.5)*m_frontStripWidth;
+		y = -m_totalWidth/2.0 + (front_stripch + m_uniformFraction(RandomGenerator::GetInstance().GetGenerator()))*m_frontStripWidth;
 	else
 		y = -m_totalWidth/2.0 + (front_stripch+0.5)*m_frontStripWidth;
 

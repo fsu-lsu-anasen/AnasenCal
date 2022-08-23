@@ -11,6 +11,8 @@
 
 //Back strips from lowest z to highest z
 
+#include "RandomGenerator.h"
+
 #include <cmath>
 #include <vector>
 
@@ -72,7 +74,7 @@ private:
 
 	ROOT::Math::RotationZ m_zRotation;
 
-	//std::uniform_real_distribution<double> m_uniformFraction;
+	std::uniform_real_distribution<double> m_uniformFraction;
 
 	bool m_isSmearing;
 

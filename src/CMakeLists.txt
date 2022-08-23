@@ -20,6 +20,8 @@ target_sources(AnasenCal PRIVATE
     MapChecker.cpp
     ParameterMap.h
     ParameterMap.cpp
+    RandomGenerator.h
+    RandomGenerator.cpp
     Geometry/SX3Detector.h
     Geometry/SX3Detector.cpp
     Geometry/QQQDetector.h

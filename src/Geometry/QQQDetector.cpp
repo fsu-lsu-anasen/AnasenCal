@@ -1,10 +1,9 @@
 
 #include "QQQDetector.h"
 
-//TODO: Implement rng
 QQQDetector::QQQDetector(double R_in, double R_out, double deltaPhi, double phiCentral, double z, double x, double y) :
 	m_innerR(R_in), m_outerR(R_out), m_deltaPhi(deltaPhi), m_centralPhi(phiCentral), m_translation(x,y,z), m_norm(0.0,0.0,1.0),
-	/*m_uniformFraction(0.0, 1.0),*/ m_isSmearing(false)
+	m_uniformFraction(0.0, 1.0), m_isSmearing(false)
 {
 	m_deltaR = (m_outerR - m_innerR)/s_nRings;
 	m_deltaPhiWedge = m_deltaPhi/s_nWedges;
@@ -157,15 +156,11 @@ ROOT::Math::XYZPoint QQQDetector::GetHitCoordinates(int ringch, int wedgech)
 
 	double r_center, phi_center;
 
-    //TODO: Implement rng
 	if(m_isSmearing)
 	{
-        /*
-		r_center  = m_innerR + (m_uniformFraction(Mask::RandomGenerator::GetInstance().GetGenerator())+ringch)*m_deltaR;
-		phi_center = -m_deltaPhi/2.0 + (m_uniformFraction(Mask::RandomGenerator::GetInstance().GetGenerator())+wedgech)*m_deltaPhiWedge;
-        */
-        r_center  = m_innerR + (0.5+ringch)*m_deltaR;
-		phi_center = -m_deltaPhi/2.0 + (0.5+wedgech)*m_deltaPhiWedge;
+		RandomGenerator& rng  = RandomGenerator::GetInstance();
+		r_center  = m_innerR + (m_uniformFraction(rng.GetGenerator())+ringch)*m_deltaR;
+		phi_center = -m_deltaPhi/2.0 + (m_uniformFraction(rng.GetGenerator())+wedgech)*m_deltaPhiWedge;
 	}
 	else
 	{
