@@ -13,17 +13,9 @@
 											|
 											y
 */
-BarcelonaDetector::BarcelonaDetector(double length, double width, double centerPhi, double centerZ, double centerRho) :
-    m_centerRho(centerRho), m_centerPhi(centerPhi), m_centerZ(centerZ), m_stripWidth(width), m_totalLength(length),
-    m_norm(1.0, 0.0, 0.0), m_uniformFraction(0.0, 1.0)
+BarcelonaDetector::BarcelonaDetector(double centerPhi, double centerZ, double centerRho) :
+    m_centerRho(std::abs(centerRho)), m_centerPhi(centerPhi*s_deg2rad), m_centerZ(centerZ), m_norm(1.0, 0.0, 0.0), m_uniformFraction(0.0, 1.0)
 {
-    m_stripLength = m_totalLength/s_nStrips;
-
-    if(m_centerPhi < 0)
-        m_centerPhi += 2.0*M_PI;
-    if(m_centerRho < 0)
-        m_centerRho *= -1.0;
-    
     m_zRotation.SetAngle(m_centerPhi);
 
     m_stripCoords.resize(s_nStrips);
@@ -42,10 +34,10 @@ void BarcelonaDetector::CalculateCorners()
     double z_min, z_max, y_min, y_max;
     for(int s=0; s<s_nStrips; s++)
     {
-        z_max = (m_centerZ - m_stripLength/2.0) + (s+1)*m_stripLength;
-		z_min = (m_centerZ - m_stripLength/2.0) + (s)*m_stripLength;
-		y_max = m_stripWidth/2.0;
-		y_min = -m_stripWidth/2.0;
+        z_max = (m_centerZ - s_stripLength/2.0) + (s+1)*s_stripLength;
+		z_min = (m_centerZ - s_stripLength/2.0) + (s)*s_stripLength;
+		y_max = s_stripWidth/2.0;
+		y_min = -s_stripWidth/2.0;
 		m_stripCoords[s][2].SetXYZ(m_centerRho, y_max, z_max);
 		m_stripCoords[s][3].SetXYZ(m_centerRho, y_max, z_min);
 		m_stripCoords[s][0].SetXYZ(m_centerRho, y_min, z_max);
@@ -66,13 +58,13 @@ ROOT::Math::XYZPoint BarcelonaDetector::GetHitCoordinates(int stripch)
     if(m_isSmearing)
     {
         RandomGenerator& rng = RandomGenerator::GetInstance();
-        y = -m_stripWidth * 0.5 + m_stripWidth * m_uniformFraction(rng.GetGenerator());
-        z = -m_totalLength * 0.5 + m_stripLength * (stripch + m_uniformFraction(rng.GetGenerator()));
+        y = -s_stripWidth * 0.5 + s_stripWidth * m_uniformFraction(rng.GetGenerator());
+        z = -s_totalLength * 0.5 + s_stripLength * (stripch + m_uniformFraction(rng.GetGenerator()));
     }
     else
     {
         y = 0.0;
-        z = -m_totalLength*0.5 + m_stripLength * (stripch + 0.5);
+        z = -s_totalLength*0.5 + s_stripLength * (stripch + 0.5);
     }
     
     ROOT::Math::XYZPoint coords(m_centerRho, y, z);
@@ -93,7 +85,7 @@ int BarcelonaDetector::GetHitChannel(double theta, double phi)
 		phi -= 2*M_PI;
 
 	//then we can check easily whether it even hit the detector in phi
-	double det_max_phi = std::atan2(m_stripWidth*0.5, m_centerRho);
+	double det_max_phi = std::atan2(s_stripWidth*0.5, m_centerRho);
 	double det_min_phi = -det_max_phi;
   
 	if (phi < det_min_phi || phi > det_max_phi)

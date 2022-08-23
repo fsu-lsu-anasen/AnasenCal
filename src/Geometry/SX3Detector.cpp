@@ -18,30 +18,19 @@
 */
 
 //TODO: Implement rng
-SX3Detector::SX3Detector(int ns, double len, double wid, double cphi, double cz, double crho) :
-	m_norm(1.0,0.0,0.0), m_uniformFraction(0.0, 1.0), m_isSmearing(false)
+SX3Detector::SX3Detector(double centerPhi, double centerZ, double centerRho) :
+	m_centerPhi(centerPhi), m_centerZ(centerZ), m_centerRho(std::abs(centerRho)), m_norm(1.0,0.0,0.0), m_uniformFraction(0.0, 1.0), m_isSmearing(false)
 {
-
-	m_nStrips = ns;
-	
-	m_stripLength = std::fabs(len);
-	m_totalWidth = std::fabs(wid);
-	m_frontStripWidth = m_totalWidth/m_nStrips;
-	m_backStripLength = m_stripLength/m_nStrips;
-
-	while (cphi < 0)
-		cphi += 2*M_PI;
-	m_centerPhi = cphi;
-	m_centerZ   = cz;
-	m_centerRho = std::fabs(crho);
+	m_frontStripWidth = s_totalWidth/s_nStrips;
+	m_backStripLength = s_stripLength/s_nStrips;
 
 	m_zRotation.SetAngle(m_centerPhi);
 
-	m_frontStripCoords.resize(m_nStrips);
-	m_backStripCoords.resize(m_nStrips);
-	m_rotFrontStripCoords.resize(m_nStrips);
-	m_rotBackStripCoords.resize(m_nStrips);
-	for(int i=0; i<m_nStrips; i++)
+	m_frontStripCoords.resize(s_nStrips);
+	m_backStripCoords.resize(s_nStrips);
+	m_rotFrontStripCoords.resize(s_nStrips);
+	m_rotBackStripCoords.resize(s_nStrips);
+	for(int i=0; i<s_nStrips; i++)
 	{
 		m_frontStripCoords[i].resize(s_nCorners);
 		m_backStripCoords[i].resize(s_nCorners);
@@ -57,28 +46,28 @@ SX3Detector::~SX3Detector() {}
 void SX3Detector::CalculateCorners()
 {
 	double y_min, y_max, z_min, z_max; 
-	for (int s=0; s<m_nStrips; s++)
+	for (int s=0; s<s_nStrips; s++)
 	{
-		y_max = m_totalWidth/2.0 - m_frontStripWidth*s;
-		y_min = m_totalWidth/2.0 - m_frontStripWidth*(s+1);
-		z_max = m_centerZ + m_stripLength/2.0;
-		z_min = m_centerZ - m_stripLength/2.0;
+		y_max = s_totalWidth/2.0 - m_frontStripWidth*s;
+		y_min = s_totalWidth/2.0 - m_frontStripWidth*(s+1);
+		z_max = m_centerZ + s_stripLength/2.0;
+		z_min = m_centerZ - s_stripLength/2.0;
 		m_frontStripCoords[s][2].SetXYZ(m_centerRho, y_max, z_max);
 		m_frontStripCoords[s][3].SetXYZ(m_centerRho, y_max, z_min);
 		m_frontStripCoords[s][0].SetXYZ(m_centerRho, y_min, z_max);
 		m_frontStripCoords[s][1].SetXYZ(m_centerRho, y_min, z_min);
 
-		z_max = (m_centerZ - m_stripLength/2.0) + (s+1)*m_backStripLength;
-		z_min = (m_centerZ - m_stripLength/2.0) + (s)*m_backStripLength;
-		y_max = m_totalWidth/2.0;
-		y_min = -m_totalWidth/2.0;
+		z_max = (m_centerZ - s_stripLength/2.0) + (s+1)*m_backStripLength;
+		z_min = (m_centerZ - s_stripLength/2.0) + (s)*m_backStripLength;
+		y_max = s_totalWidth/2.0;
+		y_min = -s_totalWidth/2.0;
 		m_backStripCoords[s][2].SetXYZ(m_centerRho, y_max, z_max);
 		m_backStripCoords[s][3].SetXYZ(m_centerRho, y_max, z_min);
 		m_backStripCoords[s][0].SetXYZ(m_centerRho, y_min, z_max);
 		m_backStripCoords[s][1].SetXYZ(m_centerRho, y_min, z_min);
 	}
 
-	for(int s=0; s<m_nStrips; s++)
+	for(int s=0; s<s_nStrips; s++)
 	{
 		m_rotFrontStripCoords[s][0] = m_zRotation*m_frontStripCoords[s][0];
 		m_rotFrontStripCoords[s][1] = m_zRotation*m_frontStripCoords[s][1];
@@ -100,12 +89,12 @@ ROOT::Math::XYZPoint SX3Detector::GetHitCoordinates(int front_stripch, double fr
 
 	double y;
 	if(m_isSmearing)
-		y = -m_totalWidth/2.0 + (front_stripch + m_uniformFraction(RandomGenerator::GetInstance().GetGenerator()))*m_frontStripWidth;
+		y = -s_totalWidth*0.5 + (front_stripch + m_uniformFraction(RandomGenerator::GetInstance().GetGenerator()))*m_frontStripWidth;
 	else
-		y = -m_totalWidth/2.0 + (front_stripch+0.5)*m_frontStripWidth;
+		y = -s_totalWidth*0.5 + (front_stripch+0.5)*m_frontStripWidth;
 
 	//recall we're still assuming phi=0 det:
-	ROOT::Math::XYZPoint coords(m_centerRho, y, front_strip_ratio*(m_stripLength/2) + m_centerZ);
+	ROOT::Math::XYZPoint coords(m_centerRho, y, front_strip_ratio*(s_stripLength*0.5) + m_centerZ);
   
 	//NOW rotate by appropriate phi
 	return m_zRotation*coords;
@@ -127,7 +116,7 @@ SX3Hit SX3Detector::GetChannelRatio(double theta, double phi)
 		phi -= 2*M_PI;
 
 	//then we can check easily whether it even hit the detector in phi
-	double det_max_phi = std::atan2(m_totalWidth/2,m_centerRho);
+	double det_max_phi = std::atan2(s_totalWidth/2,m_centerRho);
 	double det_min_phi = -det_max_phi;
   
 	if (phi < det_min_phi || phi > det_max_phi)
@@ -140,23 +129,23 @@ SX3Hit SX3Detector::GetChannelRatio(double theta, double phi)
 	double yhit = xhit*tan(phi);
 	double zhit = sqrt(xhit*xhit+yhit*yhit)/tan(theta);
 
-	for (int s=0; s<m_nStrips; s++) {
+	for (int s=0; s<s_nStrips; s++) {
 		if (xhit >=m_frontStripCoords[s][0].X() && xhit <=m_frontStripCoords[s][0].X() && //Check min and max x (constant in flat)
 			yhit >=m_frontStripCoords[s][1].Y() && yhit <=m_frontStripCoords[s][2].Y() && //Check min and max y
 			zhit >=m_frontStripCoords[s][1].Z() && zhit <=m_frontStripCoords[s][0].Z()) //Check min and max z
 		{
-			hit.front_strip_index = s;
-			hit.front_ratio = (zhit-m_centerZ)/(m_stripLength/2);
+			hit.frontStripIndex = s;
+			hit.frontRatio = (zhit-m_centerZ)/(s_stripLength/2);
 			break;
 		}
 	}
 
-	for (int s=0; s<m_nStrips; s++) {
+	for (int s=0; s<s_nStrips; s++) {
 		if (xhit >= m_backStripCoords[s][0].X() && xhit <= m_backStripCoords[s][0].X() && //Check min and max x (constant in flat)
 			yhit >= m_backStripCoords[s][1].Y() && yhit <= m_backStripCoords[s][2].Y() && //Check min and max y
 			zhit >= m_backStripCoords[s][1].Z() && zhit <= m_backStripCoords[s][0].Z()) //Check min and max z
 		{
-			hit.back_strip_index = s;
+			hit.backStripIndex = s;
 			break;
 		}
 	}

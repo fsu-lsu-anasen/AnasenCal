@@ -10,6 +10,7 @@
 #define DATASTRUCTS_H
 
 #include <vector>
+#include "Math/Point3D.h"
 
 
 struct DetectorHit
@@ -60,29 +61,39 @@ struct CalParams
 
 struct CalibratedSX3Hit
 {
-	double frontup_energy_adc = -1;
-	double frontdown_energy_adc = -1;
-	double back_energy = -1;
-	int frontup_gchan = -1;
-	int frontdown_gchan = -1;
-	int back_gchan = -1;
-	int detector_index = -1;
+	double frontUpEnergyAdc = -1;
+	double frontDownEnergyAdc = -1;
+	double backEnergy = -1;
+	int frontUpGlobalChannel = -1;
+	int frontUpLocalChannel = -1;
+	int frontDownGlobalChannel = -1;
+	int frontDownLocalChannel = -1;
+	int backGlobalChannel = -1;
+	int backLocalChannel = -1;
+	int detectorIndex = -1;
+
+	ROOT::Math::XYZPoint coordinates;
 };
 
 struct CalibratedQQQHit
 {
-	double ring_energy = -1;
-	double wedge_energy = -1;
-	int ring_gchan = -1;
-	int wedge_gchan = -1;
-	int detector_index = -1;
+	double ringEnergy = -1;
+	double wedgeEnergy = -1;
+	int ringGlobalChannel = -1;
+	int ringLocalChannel = -1;
+	int wedgeGlobalChannel = -1;
+	int wedgeLocalChannel = -1;
+	int detectorIndex = -1;
+	ROOT::Math::XYZPoint coordinates;
 };
 
 struct CalibratedBarcHit
 {
-	double front_energy = -1.0;
-	int front_gchan = -1;
-	int detector_index = -1;
+	double frontEnergy = -1.0;
+	int frontGlobalChannel = -1;
+	int frontLocalChannel = -1;
+	int detectorIndex = -1;
+	ROOT::Math::XYZPoint coordinates;
 };
 
 struct CalibratedEvent

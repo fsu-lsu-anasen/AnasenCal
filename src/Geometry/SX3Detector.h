@@ -22,16 +22,16 @@
 
 struct SX3Hit
 {
-	int front_strip_index=-1;
-	int back_strip_index=-1;
-	double front_ratio=0.0;
+	int frontStripIndex=-1;
+	int backStripIndex=-1;
+	double frontRatio=0.0;
 };
 
 class SX3Detector
 {
 public:
   
-	SX3Detector(int ns, double len, double wid, double cphi, double cz, double crho);
+	SX3Detector(double centerPhi, double centerZ, double centerRho);
 	~SX3Detector();
 	const ROOT::Math::XYZPoint& GetFrontStripCoordinates(int stripch, int corner) const { return m_frontStripCoords[stripch][corner]; }
 	const ROOT::Math::XYZPoint& GetBackStripCoordinates(int stripch, int corner) const { return m_backStripCoords[stripch][corner]; }
@@ -51,15 +51,10 @@ public:
 	SX3Hit GetChannelRatio(double theta, double phi);
 
 private:
-	bool ValidChannel(int f) { return ((f >= 0 && f < m_nStrips) ? true : false); };
+	bool ValidChannel(int f) { return ((f >= 0 && f < s_nStrips) ? true : false); };
 	bool ValidRatio(double r) { return ((r >= -1 && r <= 1) ? true : false); };
 	void CalculateCorners();
 
-	int m_nStrips;
-	static constexpr int s_nCorners = 4;
-
-	double m_stripLength; //common to all strips, hence total
-	double m_totalWidth;
 	double m_frontStripWidth; //assuming equal widths
 	double m_backStripLength; //assuming equal widths
 
@@ -77,6 +72,13 @@ private:
 	std::uniform_real_distribution<double> m_uniformFraction;
 
 	bool m_isSmearing;
+
+	//All distances defined in meters
+	static constexpr int s_nCorners = 4;
+	static constexpr int s_nStrips = 4;
+	static constexpr double s_stripLength = 0.075;
+	static constexpr double s_totalWidth = 0.04;
+	static constexpr double s_deg2rad = M_PI/180.0;
 
 };
 

@@ -20,7 +20,7 @@
 class QQQDetector
 {
 public:
-	QQQDetector(double R_in, double R_out, double deltaPhi, double phiCentral, double z, double x=0, double y=0);
+	QQQDetector(double phiCentral, double z, double x=0, double y=0);
 	~QQQDetector();
 	const ROOT::Math::XYZPoint& GetRingCoordinates(int ringch, int corner) { return m_ringCoords[ringch][corner]; }
 	const ROOT::Math::XYZPoint& GetWedgeCoordinates(int wedgech, int corner) { return m_wedgeCoords[wedgech][corner]; }
@@ -42,10 +42,6 @@ private:
 	void CalculateCorners();
 	ROOT::Math::XYZPoint TransformCoordinates(ROOT::Math::XYZPoint& vector) { return m_translation * (m_zRotation * vector) ; }
 
-	double m_innerR;
-	double m_outerR;
-	double m_deltaR;
-	double m_deltaPhi;
 	double m_deltaPhiWedge;
 	double m_centralPhi;
 
@@ -59,7 +55,12 @@ private:
 
 	static constexpr int s_nRings = 16;
 	static constexpr int s_nWedges = 16;
+	static constexpr double s_innerR = 0.0501;
+	static constexpr double s_outerR = 0.099;
+	static constexpr double s_deltaR = s_outerR - s_innerR;
+	static constexpr double s_deltaPhi = 1.52119; //radians
 	static constexpr double s_deg2rad  = M_PI/180.0;
+
 };
 
 #endif

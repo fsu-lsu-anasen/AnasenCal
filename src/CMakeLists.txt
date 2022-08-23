@@ -28,6 +28,8 @@ target_sources(AnasenCal PRIVATE
     Geometry/QQQDetector.cpp
     Geometry/BarcelonaDetector.h
     Geometry/BarcelonaDetector.cpp
+    Geometry/AnasenArray.h
+    Geometry/AnasenArray.cpp
 )
 
 target_link_libraries(AnasenCal PUBLIC CalDict ${ROOT_LIBRARIES})

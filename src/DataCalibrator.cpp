@@ -92,14 +92,16 @@ void DataCalibrator::Run(const std::string& inputname, const std::string& output
 			for(auto& backhit : event->barrel[j].backs)
 			{
 				sx3hit = blank_sx3;
+				auto backchannel = m_channelMap.FindChannel(backhit.globalChannel);
 				auto backgains = m_backGainMap.FindParameters(backhit.globalChannel);
 				auto backcal = m_energyCalMap.FindParameters(backhit.globalChannel);
 				if(backgains == m_backGainMap.End() || backcal == m_energyCalMap.End())
 					continue;
-				sx3hit.back_energy = backcal->second.slope*(backgains->second.slope*(backhit.energy) + backgains->second.intercept) +
+				sx3hit.backEnergy = backcal->second.slope*(backgains->second.slope*(backhit.energy) + backgains->second.intercept) +
 									 backcal->second.intercept;
-				sx3hit.back_gchan = backhit.globalChannel;
-				sx3hit.detector_index = j;				 
+				sx3hit.backGlobalChannel = backhit.globalChannel;
+				sx3hit.backLocalChannel = backchannel->second.localChannel;
+				sx3hit.detectorIndex = j;				 
 				for(auto& fuphit : event->barrel[j].frontsUp)
 				{
 					auto fup_channel = m_channelMap.FindChannel(fuphit.globalChannel);
@@ -125,10 +127,12 @@ void DataCalibrator::Run(const std::string& inputname, const std::string& output
 						}
 						else
 						{
-							sx3hit.frontup_energy_adc = cal_up_energy;
-							sx3hit.frontdown_energy_adc = cal_down_energy;
-							sx3hit.frontup_gchan = fuphit.globalChannel;
-							sx3hit.frontdown_gchan = fdownhit.globalChannel;
+							sx3hit.frontUpEnergyAdc = cal_up_energy;
+							sx3hit.frontDownEnergyAdc = cal_down_energy;
+							sx3hit.frontUpGlobalChannel = fuphit.globalChannel;
+							sx3hit.frontDownGlobalChannel = fdownhit.globalChannel;
+							sx3hit.frontUpLocalChannel = fup_channel->second.localChannel;
+							sx3hit.frontDownLocalChannel = fdown_channel->second.localChannel;
 							break;
 						}
 					}
@@ -142,29 +146,33 @@ void DataCalibrator::Run(const std::string& inputname, const std::string& output
 			for(auto& wedgehit : event->fqqq[j].wedges)
 			{
 				qqqhit = blank_qqq;
+				auto backchannel = m_channelMap.FindChannel(wedgehit.globalChannel);
 				auto backgains = m_backGainMap.FindParameters(wedgehit.globalChannel);
 				auto backcal = m_energyCalMap.FindParameters(wedgehit.globalChannel);
 				if(backgains == m_backGainMap.End() || backcal == m_energyCalMap.End())
 					continue;
 				
-				qqqhit.wedge_energy = backcal->second.slope*(backgains->second.slope*(wedgehit.energy) + backgains->second.intercept) +
+				qqqhit.wedgeEnergy = backcal->second.slope*(backgains->second.slope*(wedgehit.energy) + backgains->second.intercept) +
 									  backcal->second.intercept;
-				qqqhit.wedge_gchan = wedgehit.globalChannel;
-				qqqhit.detector_index = j;
+				qqqhit.wedgeGlobalChannel = wedgehit.globalChannel;
+				qqqhit.wedgeLocalChannel = backchannel->second.localChannel;
+				qqqhit.detectorIndex = j;
 				for(auto& ringhit : event->fqqq[j].rings)
 				{
+					auto frontchannel = m_channelMap.FindChannel(ringhit.globalChannel);
 					auto frontgains = m_frontBackGainMap.FindParameters(ringhit.globalChannel);
 					auto frontcal = m_energyCalMap.FindParameters(ringhit.globalChannel);
 					if(frontgains == m_frontBackGainMap.End() || frontcal == m_energyCalMap.End())
 						continue;
 					cal_up_energy = frontcal->second.slope*(frontgains->second.slope*(ringhit.energy) + frontgains->second.intercept) +
 									frontcal->second.intercept;
-					if(cal_up_energy/qqqhit.wedge_energy > 1.2 || cal_up_energy/qqqhit.wedge_energy < 0.8)
+					if(cal_up_energy/qqqhit.wedgeEnergy > 1.2 || cal_up_energy/qqqhit.wedgeEnergy < 0.8)
 						continue;
 					else
 					{
-						qqqhit.ring_energy = cal_up_energy;
-						qqqhit.ring_gchan = ringhit.globalChannel;
+						qqqhit.ringEnergy = cal_up_energy;
+						qqqhit.ringGlobalChannel = ringhit.globalChannel;
+						qqqhit.ringLocalChannel = frontchannel->second.localChannel;
 						break;
 					} 
 				}
@@ -177,25 +185,29 @@ void DataCalibrator::Run(const std::string& inputname, const std::string& output
 			for(auto& fronthit : event->barcUp[j].fronts)
 			{
 				barchit = blank_barc;
+				auto frontchannel = m_channelMap.FindChannel(fronthit.globalChannel);
 				auto frontcal = m_energyCalMap.FindParameters(fronthit.globalChannel);
 				if(frontcal == m_energyCalMap.End())
 					continue;
 
-				barchit.front_energy = frontcal->second.slope*fronthit.energy + frontcal->second.intercept;
-				barchit.front_gchan = fronthit.globalChannel;
-				barchit.detector_index = j;
+				barchit.frontEnergy = frontcal->second.slope*fronthit.energy + frontcal->second.intercept;
+				barchit.frontGlobalChannel = fronthit.globalChannel;
+				barchit.frontLocalChannel = frontchannel->second.localChannel;
+				barchit.detectorIndex = j;
 				calevent.barcUp.push_back(barchit);
 			}
 			for(auto& fronthit : event->barcDown[j].fronts)
 			{
 				barchit = blank_barc;
+				auto frontchannel = m_channelMap.FindChannel(fronthit.globalChannel);
 				auto frontcal = m_energyCalMap.FindParameters(fronthit.globalChannel);
 				if(frontcal == m_energyCalMap.End())
 					continue;
 
-				barchit.front_energy = frontcal->second.slope*fronthit.energy + frontcal->second.intercept;
-				barchit.front_gchan = fronthit.globalChannel;
-				barchit.detector_index = j;
+				barchit.frontEnergy = frontcal->second.slope*fronthit.energy + frontcal->second.intercept;
+				barchit.frontGlobalChannel = fronthit.globalChannel;
+				barchit.frontLocalChannel = frontchannel->second.localChannel;
+				barchit.detectorIndex = j;
 				calevent.barcDown.push_back(barchit);
 			}
 		}

@@ -13,7 +13,7 @@
 class BarcelonaDetector
 {
 public:
-    BarcelonaDetector(double length, double width, double centerPhi, double centerZ, double centerRho);
+    BarcelonaDetector(double centerPhi, double centerZ, double centerRho);
     ~BarcelonaDetector();
 
     const ROOT::Math::XYZPoint& GetStripCoordinates(int stripch, int corner) { return m_stripCoords[stripch][corner]; }
@@ -33,10 +33,6 @@ private:
     double m_centerPhi;
     double m_centerZ;
 
-    double m_stripLength;
-    double m_stripWidth;
-    double m_totalLength;
-
     bool m_isSmearing;
     std::vector<std::vector<ROOT::Math::XYZPoint>> m_stripCoords;
     std::vector<std::vector<ROOT::Math::XYZPoint>> m_rotStripCoords;
@@ -48,6 +44,12 @@ private:
 
     static constexpr int s_nStrips = 32;
     static constexpr int s_nCorners = 4;
+
+    //All distances defined in meters
+    static constexpr double s_totalLength = 0.075;
+    static constexpr double s_stripLength = s_totalLength/s_nStrips;
+    static constexpr double s_stripWidth = 0.02;
+    static constexpr double s_deg2rad = M_PI/180.0;
 };
 
 #endif
