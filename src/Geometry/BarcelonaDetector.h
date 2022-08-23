@@ -9,11 +9,13 @@
 #include "Math/Point3D.h"
 #include "Math/Vector3D.h"
 #include "Math/RotationZ.h"
+#include "Math/RotationY.h"
+#include "Math/Translation3D.h"
 
 class BarcelonaDetector
 {
 public:
-    BarcelonaDetector(double centerPhi, double centerZ, double centerRho);
+    BarcelonaDetector(double centerPhi, double centerZ, double centerRho, bool isFlippedX = false);
     ~BarcelonaDetector();
 
     const ROOT::Math::XYZPoint& GetStripCoordinates(int stripch, int corner) { return m_stripCoords[stripch][corner]; }
@@ -27,17 +29,24 @@ public:
 
 private:
     bool IsChannelValid(int channel) { return (channel >= 0 && channel < s_nStrips); }
+    ROOT::Math::XYZPoint Transform(const ROOT::Math::XYZPoint& point)
+    { 
+        return m_isFlippedY ? m_zRotation * ( m_translation * (m_yRotation * point)) : m_zRotation * (m_translation * point);
+    }
     void CalculateCorners();
 
     double m_centerRho;
     double m_centerPhi;
     double m_centerZ;
 
+    bool m_isFlippedY;
     bool m_isSmearing;
     std::vector<std::vector<ROOT::Math::XYZPoint>> m_stripCoords;
     std::vector<std::vector<ROOT::Math::XYZPoint>> m_rotStripCoords;
 
     ROOT::Math::RotationZ m_zRotation;
+    ROOT::Math::RotationY m_yRotation;
+    ROOT::Math::Translation3D m_translation;
     ROOT::Math::XYZVector m_norm;
 
 	std::uniform_real_distribution<double> m_uniformFraction;

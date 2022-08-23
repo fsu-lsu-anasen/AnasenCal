@@ -13,10 +13,13 @@
 											|
 											y
 */
-BarcelonaDetector::BarcelonaDetector(double centerPhi, double centerZ, double centerRho) :
-    m_centerRho(std::abs(centerRho)), m_centerPhi(centerPhi*s_deg2rad), m_centerZ(centerZ), m_norm(1.0, 0.0, 0.0), m_uniformFraction(0.0, 1.0)
+BarcelonaDetector::BarcelonaDetector(double centerPhi, double centerZ, double centerRho, bool isFlippedY) :
+    m_centerRho(std::abs(centerRho)), m_centerPhi(centerPhi*s_deg2rad), m_centerZ(centerZ), m_isFlippedY(isFlippedY), 
+    m_norm(1.0, 0.0, 0.0), m_uniformFraction(0.0, 1.0)
 {
     m_zRotation.SetAngle(m_centerPhi);
+    m_yRotation.SetAngle(M_PI);
+    m_translation.SetXYZ(m_centerRho, 0., m_centerZ);
 
     m_stripCoords.resize(s_nStrips);
     m_rotStripCoords.resize(s_nCorners);
@@ -36,20 +39,20 @@ void BarcelonaDetector::CalculateCorners()
     double z_min, z_max, y_min, y_max;
     for(int s=0; s<s_nStrips; s++)
     {
-        z_max = (m_centerZ - s_stripLength/2.0) + (s+1)*s_stripLength;
-		z_min = (m_centerZ - s_stripLength/2.0) + (s)*s_stripLength;
-		y_max = s_stripWidth/2.0;
-		y_min = -s_stripWidth/2.0;
-		m_stripCoords[s][2].SetXYZ(m_centerRho, y_max, z_max);
-		m_stripCoords[s][3].SetXYZ(m_centerRho, y_max, z_min);
-		m_stripCoords[s][0].SetXYZ(m_centerRho, y_min, z_max);
-		m_stripCoords[s][1].SetXYZ(m_centerRho, y_min, z_min);
+        z_max = (-s_stripLength*0.5) + (s+1)*s_stripLength;
+		z_min = (-s_stripLength*0.5) + (s)*s_stripLength;
+		y_max = s_stripWidth/0.5;
+		y_min = -s_stripWidth/0.5;
+		m_stripCoords[s][2].SetXYZ(0.0, y_max, z_max);
+		m_stripCoords[s][3].SetXYZ(0.0, y_max, z_min);
+		m_stripCoords[s][0].SetXYZ(0.0, y_min, z_max);
+		m_stripCoords[s][1].SetXYZ(0.0, y_min, z_min);
     }
 
     for(int i=0; i<s_nStrips; i++)
     {
         for(int j=0; j<s_nCorners; j++)
-            m_rotStripCoords[i][j] = m_zRotation * m_stripCoords[i][j];
+            m_rotStripCoords[i][j] = Transform(m_stripCoords[i][j]);
     }
 }
 
@@ -70,7 +73,7 @@ ROOT::Math::XYZPoint BarcelonaDetector::GetHitCoordinates(int stripch)
     }
     
     ROOT::Math::XYZPoint coords(m_centerRho, y, z);
-    return m_zRotation * coords;
+    return Transform(coords);
 }
 
 int BarcelonaDetector::GetHitChannel(double theta, double phi)

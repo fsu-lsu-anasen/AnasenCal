@@ -7,7 +7,7 @@ AnasenArray::AnasenArray()
         m_sx3Barrel.emplace_back(s_sx3BarrelPhiList[i], s_sx3BarrelZ, s_sx3BarrelRhoList[i]);
 
     for(int i=0; i<s_nBarcDownstream; i++)
-        m_barcDownstreamBarrel.emplace_back(s_barcDownstreamBarrelPhiList[i], s_barcDownstreamBarrelZ, s_barcDownstreamBarrelRhoList[i]);
+        m_barcDownstreamBarrel.emplace_back(s_barcDownstreamBarrelPhiList[i], s_barcDownstreamBarrelZ, s_barcDownstreamBarrelRhoList[i], true);
 
     for(int i=0; i<s_nBarcUpstream; i++)
         m_barcUpstreamBarrel.emplace_back(s_barcUpstreamBarrelPhiList[i], s_barcUpstreamBarrelZ, s_barcUpstreamBarrelRhoList[i]);
