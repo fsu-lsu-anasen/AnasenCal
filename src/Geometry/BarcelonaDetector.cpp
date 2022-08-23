@@ -29,6 +29,8 @@ BarcelonaDetector::BarcelonaDetector(double centerPhi, double centerZ, double ce
     CalculateCorners();
 }
 
+BarcelonaDetector::~BarcelonaDetector() {}
+
 void BarcelonaDetector::CalculateCorners()
 {
     double z_min, z_max, y_min, y_max;
