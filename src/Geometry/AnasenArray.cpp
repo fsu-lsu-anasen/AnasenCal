@@ -22,14 +22,11 @@ void AnasenArray::FillCoordinates(CalibratedEvent& event)
     double sx3FrontRatio;
     for(CalibratedSX3Hit& hit : event.barrel)
     {
+        //Avoid using both front energies, as in some extreme cases can result in unreliable analysis
         if(hit.frontDownEnergyAdc > hit.frontUpEnergyAdc)
-        {
-            //Idk some updown shit, depends on where origin is
-        }
+            sx3FrontRatio = 2.0*hit.frontDownEnergyAdc/hit.backEnergy - 1.0;
         else
-        {
-            //Idk some updown shit, depends on where origin is
-        }
+            sx3FrontRatio = 1.0 - 2.0*hit.frontUpEnergyAdc/hit.backEnergy;
         hit.coordinates = m_sx3Barrel[hit.detectorIndex].GetHitCoordinates(s_sx3FrontStripConversion[hit.frontUpLocalChannel], sx3FrontRatio);
     }
 
