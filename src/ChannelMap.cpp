@@ -32,11 +32,12 @@ void ChannelMap::FillMap(const std::string& filename)
 		return;
 	}
 
+	std::cout<<"filename "<<filename<<std::endl;
 	ChannelData data;
 	int gchan;
 	while(input>>gchan)
 	{
-		input>>data.detectorType>>data.detectorID>>data.detectorComponent>>data.localChannel;
+		input>>data.detectorID>>data.detectorType>>data.detectorComponent>>data.localChannel;
 		m_cmap[gchan] = data;
 	}
 

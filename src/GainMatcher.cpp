@@ -74,13 +74,13 @@ GraphData GainMatcher::GetPoints(THashTable* table, const std::string& name)
 	TH1* histo = (TH1*) table->FindObject(name.c_str());
 	if(histo == nullptr)
 	{
-		//std::cerr<<"Histogram named "<<name<<" not found at GainMatcher::GetPoints! Returning empty data."<<std::endl;
+		std::cerr<<"Histogram named "<<name<<" not found at GainMatcher::GetPoints! Returning empty data."<<std::endl;
 		return data;
 	}
 
 	if(histo->Integral() < 1000.0)
 	{
-		//std::cerr<<"Spectrum "<<name<<" has less than a thousand total counts. Rejected."<<std::endl;
+		std::cerr<<"Spectrum "<<name<<" has less than a thousand total counts. Rejected."<<std::endl;
 		return data;
 	}
 
@@ -92,7 +92,7 @@ GraphData GainMatcher::GetPoints(THashTable* table, const std::string& name)
 	}
 	else if(npeaks != 3)
 	{
-		std::cerr<<"Less than 3 peaks found in spectrum "<<name<<"! returning empty."<<std::endl;
+		std::cerr<<npeaks<<" peaks found in spectrum "<<name<<" when expecting 3! returning empty."<<std::endl;
 		return data;
 	}
 
@@ -203,7 +203,7 @@ void GainMatcher::MatchBacks(const std::string& inputname, const std::string& gr
 			for(auto& hit : event->barrel[j].backs)
 			{
 				name = "channel_"+std::to_string(hit.globalChannel);
-				MyFill(histo_table, name.c_str(), name.c_str(), 875, 1000.0, 8000.0, hit.energy);
+				MyFill(histo_table, name.c_str(), name.c_str(), 340, 600.0, 4000.0, hit.energy);
 			}
 		}
 		for(int j=0; j<4; j++)
@@ -211,7 +211,7 @@ void GainMatcher::MatchBacks(const std::string& inputname, const std::string& gr
 			for(auto& hit : event->fqqq[j].wedges)
 			{
 				name = "channel_"+std::to_string(hit.globalChannel);
-				MyFill(histo_table, name.c_str(), name.c_str(), 875, 1000.0, 8000.0, hit.energy);
+				MyFill(histo_table, name.c_str(), name.c_str(), 340, 600.0, 4000.0, hit.energy);
 			}
 		}
 	}
@@ -221,8 +221,11 @@ void GainMatcher::MatchBacks(const std::string& inputname, const std::string& gr
 	{
 		auto channel = m_channelMap.FindChannel(i);
 		if(channel == m_channelMap.End() || channel->second.detectorType == "BARCUPSTREAM" || channel->second.detectorType == "BARCDOWNSTREAM" || 
-		   channel->second.detectorComponent == "FRONTUP" || channel->second.detectorComponent == "FRONTDOWN" || channel->second.detectorComponent == "RING")
+		  channel->second.detectorComponent == "FRONTUP" || channel->second.detectorComponent == "FRONTDOWN"
+		   || channel->second.detectorComponent == "RING")
+		{
 			continue;
+		}
 		name = "channel_"+std::to_string(i);
 		gain_data[i] = GetPoints(histo_table, name);
 	}
@@ -283,7 +286,7 @@ void GainMatcher::MatchBacks(const std::string& inputname, const std::string& gr
 				auto backgains = backmap.FindParameters(hit.globalChannel);
 				if(backgains == backmap.End())
 					continue;
-				MyFill(histo_table, after_name.c_str(), after_name.c_str(), 875, 1000.0, 8000.0, backgains->second.slope*(hit.energy)+backgains->second.intercept);
+				MyFill(histo_table, after_name.c_str(), after_name.c_str(), 340, 600.0, 4000.0, backgains->second.slope*(hit.energy)+backgains->second.intercept);
 			}
 		}
 
@@ -296,7 +299,7 @@ void GainMatcher::MatchBacks(const std::string& inputname, const std::string& gr
 				auto backgains = backmap.FindParameters(hit.globalChannel);
 				if(backgains == backmap.End())
 					continue;
-				MyFill(histo_table, after_name.c_str(), after_name.c_str(), 875, 1000.0, 8000.0, backgains->second.slope*(hit.energy)+backgains->second.intercept);
+				MyFill(histo_table, after_name.c_str(), after_name.c_str(), 340, 600.0, 4000.0, backgains->second.slope*(hit.energy)+backgains->second.intercept);
 			}
 		}
 	}

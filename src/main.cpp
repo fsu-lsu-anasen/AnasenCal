@@ -45,6 +45,12 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
+	if(!EnforceDictionaryLinked())
+	{
+		std::cout<<"Dictionary problems!"<<std::endl;
+		return 1;
+	}
+
 	std::string junk, ecaloutfile, ecaloutrootfile, channelfile, finaldata;
 	std::string rawdata;
 	std::string alphadata, rundata;
