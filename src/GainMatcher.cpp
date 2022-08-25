@@ -341,7 +341,7 @@ void GainMatcher::MatchSX3UpDown(const std::string& inputname, const std::string
 	}
 
 	TFile* input = TFile::Open(inputname.c_str(), "READ");
-	TTree* intree = (TTree*) input->Get("EventTree");
+	TTree* intree = (TTree*) input->Get("SortTree");
 
 	CoincEvent* event = new CoincEvent();
 

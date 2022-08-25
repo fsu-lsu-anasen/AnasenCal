@@ -106,13 +106,13 @@ int main(int argc, char** argv)
 	}
 	else if(option == "--gain-match-updown")
 	{
-		std::cout<<"Alpha data file: "<<rundata<<std::endl;
+		std::cout<<"Alpha data file: "<<alphadata<<std::endl;
 		std::cout<<"SX3 Upstream-Downstream Gain-matching Histogram File: "<<updowngains_plots<<std::endl;
 		std::cout<<"SX3 Upstream-Downstream Gain-matching Output File: "<<updowngains<<std::endl;
 		std::cout<<"----------------------------------------------------"<<std::endl;
 		std::cout<<"Gain-matching SX3 upstream fronts and downstream fronts..."<<std::endl;
 		GainMatcher matcher(channelfile);
-		matcher.MatchSX3UpDown(rundata, updowngains_plots, updowngains, backgains);
+		matcher.MatchSX3UpDown(alphadata, updowngains_plots, updowngains, backgains);
 	}
 	else if(option == "--gain-match-frontback")
 	{
