@@ -20,7 +20,7 @@ Different options are as follows:
 	3. gain-match : performs all gain-matching steps in a single-shot (not recommended)
 	4. gain-match-backs : performs first step of gain-matching by aligning all back channels within each detector
 	5. gain-match-updown : performs second step of gain-matching by aligning the SX3 front upstream and downstream channels
-	6. gain-match-updown : performs last step of gain-matching by aligning front channels to back channels
+	6. gain-match-frontback : performs last step of gain-matching by aligning front channels to back channels
 	7. calibrate-energy : calibrates the energy of each channel using alpha data
 	8. apply-calibrations : applies calibrations to a dataset, generating a new calibrated file
 
