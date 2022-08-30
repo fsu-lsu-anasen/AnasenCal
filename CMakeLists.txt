@@ -12,7 +12,7 @@ endif()
 
 project(AnasenCal)
 
-find_package(ROOT REQUIRED COMPONENTS Spectrum)
+find_package(ROOT REQUIRED COMPONENTS Spectrum GenVector)
 
 set(ANASENCAL_BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 set(ANASENCAL_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib)

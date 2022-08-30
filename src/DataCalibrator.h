@@ -12,6 +12,7 @@
 #include <string>
 #include "ChannelMap.h"
 #include "ParameterMap.h"
+#include "Geometry/AnasenArray.h"
 
 class DataCalibrator
 {

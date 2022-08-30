@@ -1,4 +1,5 @@
 #include "AnasenArray.h"
+#include <fstream>
 
 AnasenArray::AnasenArray()
 {
@@ -15,6 +16,8 @@ AnasenArray::AnasenArray()
     for(int i=0; i<s_nQQQDownstream; i++)
         m_qqqDownstreamCap.emplace_back(s_qqqDownstreamCapPhiList[i], s_qqqDownstreamCapZ);
 }
+
+AnasenArray::~AnasenArray() {}
 
 //Will need to change experiment to experiment
 void AnasenArray::FillCoordinates(CalibratedEvent& event)
@@ -38,4 +41,70 @@ void AnasenArray::FillCoordinates(CalibratedEvent& event)
 
     for(CalibratedBarcHit& hit : event.barcUp)
         hit.coordinates = m_barcDownstreamBarrel[hit.detectorIndex].GetHitCoordinates(hit.frontLocalChannel);
+}
+
+void AnasenArray::WriteDetectorArray(const std::string& filename)
+{
+    std::ofstream output(filename);
+    if(!output.is_open())
+    {
+        std::cerr<<"Unable to open output file "<<filename<<" at AnasenArray::WriteDetectorArray!"<<std::endl;
+        return;
+    }
+
+    //Format is X | Y | Z
+    ROOT::Math::XYZPoint point;
+    for(auto& sx3 : m_sx3Barrel)
+    {
+        for(int i=0; i<4; i++)
+        {
+            for(int j=0; j<4; j++)
+            {
+                point = sx3.GetRotatedFrontStripCoordinates(i, j);
+                output << point.X() << " " << point.Y() << " " << point.Z() << std::endl;
+                point = sx3.GetRotatedBackStripCoordinates(i, j);
+                output << point.X() << " " << point.Y() << " " << point.Z() << std::endl;
+            }
+        }
+    }
+
+    for(auto& qqq : m_qqqDownstreamCap)
+    {
+        for(int i=0; i<16; i++)
+        {
+            for(int j=0; j<4; j++)
+            {
+                point = qqq.GetRingCoordinates(i, j);
+                output << point.X() << " " << point.Y() << " " << point.Z() << std::endl;
+                point = qqq.GetWedgeCoordinates(i, j);
+                output << point.X() << " " << point.Y() << " " << point.Z() << std::endl;
+            }
+        }
+    }
+
+    for(auto& barc : m_barcDownstreamBarrel)
+    {
+        for(int i=0; i<32; i++)
+        {
+            for(int j=0; j<4; j++)
+            {
+                point = barc.GetRotatedStripCoordinates(i, j);
+                output << point.X() << " " << point.Y() << " " << point.Z() << std::endl;
+            }
+        }
+    }
+
+    for(auto& barc : m_barcUpstreamBarrel)
+    {
+        for(int i=0; i<32; i++)
+        {
+            for(int j=0; j<4; j++)
+            {
+                point = barc.GetRotatedStripCoordinates(i, j);
+                output << point.X() << " " << point.Y() << " " << point.Z() << std::endl;
+            }
+        }
+    }
+
+    output.close();
 }

@@ -24,6 +24,7 @@ int main(int argc, char** argv)
 			std::cerr<<"--gain-match-frontback : performs last step of gain-matching by aligning front channels to back channels"<<std::endl;
 			std::cerr<<"--calibrate-energy : calibrates the energy of each channel using alpha data"<<std::endl;
 			std::cerr<<"--apply-calibrations : applies calibrations to a dataset, generating a new calibrated file"<<std::endl;
+			std::cerr<<"--print-geo : write the Anasen geometery to a text file"<<std::endl;
 			std::cerr<<"These are listed in the order that they should be used to completely calibrate the silicon in an ANASEN dataset"<<std::endl;
 			std::cerr<<"AnasenCal should be run using the following formula:"<<std::endl;
 			std::cerr<<"./bin/anasencal --<option> <input file>"<<std::endl;
@@ -181,6 +182,11 @@ int main(int argc, char** argv)
 		std::cout<<"Generating a dead channel map in etc/DeadChannels.txt..."<<std::endl;
 		GenerateDeadChannelMap(backgains, updowngains, frontbackgains, ecaloutfile, channelfile, "etc/DeadChannels.txt");
 	}
+	else if(option == "--print-geo")
+	{
+		AnasenArray array;
+		array.WriteDetectorArray("etc/AnasenGeo.txt");
+	}
 	else
 	{
 		std::cout<<"----------------------------------------------------"<<std::endl;
@@ -191,6 +197,7 @@ int main(int argc, char** argv)
 		std::cerr<<"--gain-match-frontback : performs last step of gain-matching by aligning front channels to back channels"<<std::endl;
 		std::cerr<<"--calibrate-energy : calibrates the energy of each channel using alpha data"<<std::endl;
 		std::cerr<<"--apply-calibrations : applies calibrations to a dataset, generating a new calibrated file"<<std::endl;
+		std::cerr<<"--print-geo : write the Anasen geometery to a text file"<<std::endl;
 		std::cerr<<"These are listed in the order that they should be used to completely calibrate the silicon in an ANASEN dataset"<<std::endl;
 		return 1;
 	}

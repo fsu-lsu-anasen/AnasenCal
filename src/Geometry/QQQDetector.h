@@ -57,7 +57,7 @@ private:
 	static constexpr int s_nWedges = 16;
 	static constexpr double s_innerR = 0.0501;
 	static constexpr double s_outerR = 0.099;
-	static constexpr double s_deltaR = s_outerR - s_innerR;
+	static constexpr double s_deltaR = (s_outerR - s_innerR) / s_nRings;
 	static constexpr double s_deltaPhi = 1.52119; //radians
 	static constexpr double s_deg2rad  = M_PI/180.0;
 

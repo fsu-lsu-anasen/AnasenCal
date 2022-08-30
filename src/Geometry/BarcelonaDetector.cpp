@@ -22,11 +22,11 @@ BarcelonaDetector::BarcelonaDetector(double centerPhi, double centerZ, double ce
     m_translation.SetXYZ(m_centerRho, 0., m_centerZ);
 
     m_stripCoords.resize(s_nStrips);
-    m_rotStripCoords.resize(s_nCorners);
+    m_rotStripCoords.resize(s_nStrips);
     for(int i=0; i<s_nStrips; i++)
     {
-        m_stripCoords.resize(s_nCorners);
-        m_rotStripCoords.resize(s_nCorners);
+        m_stripCoords[i].resize(s_nCorners);
+        m_rotStripCoords[i].resize(s_nCorners);
     }
 
     CalculateCorners();
