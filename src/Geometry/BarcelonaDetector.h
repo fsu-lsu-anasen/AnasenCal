@@ -55,9 +55,10 @@ private:
     static constexpr int s_nCorners = 4;
 
     //All distances defined in meters
-    static constexpr double s_totalLength = 0.075;
+    static constexpr double s_centerOffset = 0.0023173; //barc center shifted off axis 2.3173mm
+    static constexpr double s_totalLength = 0.066;
     static constexpr double s_stripLength = s_totalLength/s_nStrips;
-    static constexpr double s_stripWidth = 0.02;
+    static constexpr double s_stripWidth = 0.022;
     static constexpr double s_deg2rad = M_PI/180.0;
 };
 

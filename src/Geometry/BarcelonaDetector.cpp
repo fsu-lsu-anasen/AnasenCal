@@ -41,8 +41,8 @@ void BarcelonaDetector::CalculateCorners()
     {
         z_max = (-s_stripLength*0.5) + (s+1)*s_stripLength;
 		z_min = (-s_stripLength*0.5) + (s)*s_stripLength;
-		y_max = s_stripWidth/0.5;
-		y_min = -s_stripWidth/0.5;
+		y_max = s_stripWidth*0.5;
+		y_min = -s_stripWidth*0.5; 
 		m_stripCoords[s][2].SetXYZ(0.0, y_max, z_max);
 		m_stripCoords[s][3].SetXYZ(0.0, y_max, z_min);
 		m_stripCoords[s][0].SetXYZ(0.0, y_min, z_max);

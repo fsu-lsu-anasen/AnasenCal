@@ -19,7 +19,7 @@
 
 //TODO: Implement rng
 SX3Detector::SX3Detector(double centerPhi, double centerZ, double centerRho) :
-	m_centerPhi(centerPhi), m_centerZ(centerZ), m_centerRho(centerRho), m_norm(1.0,0.0,0.0), m_uniformFraction(0.0, 1.0), m_isSmearing(false)
+	m_centerPhi(centerPhi*s_deg2rad), m_centerZ(centerZ), m_centerRho(std::abs(centerRho)), m_norm(1.0,0.0,0.0), m_uniformFraction(0.0, 1.0), m_isSmearing(false)
 {
 	m_frontStripWidth = s_totalWidth/s_nStrips;
 	m_backStripLength = s_stripLength/s_nStrips;
